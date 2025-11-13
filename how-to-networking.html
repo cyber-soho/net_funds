@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Network Scenarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutral -->
+    <!-- Application Structure Plan: Designed a thematic SPA with top-level navigation ("Home", "LAN Scenario", "WAN Scenario"). This structure breaks the linear report into explorable, self-contained modules. Users can jump directly to the topic they care about (e.g., "NAT" in the WAN scenario) instead of scrolling. Each scenario features an interactive, step-by-step diagram (built with HTML/CSS) where users click "Next Step" to visually follow the data flow (DHCP, ARP, NAT) and see contextual explanations, transforming passive reading into active learning. -->
+    <!-- Visualization & Content Choices: Report Info: Step-by-step process flows (DHCP, NAT). Goal: Organize/Change. Viz/Presentation: Interactive diagram using HTML/CSS/Tailwind (flex/grid) and JS. Interaction: User clicks "Next"/"Previous" buttons. JS updates CSS classes (e.g., borders, backgrounds) on device divs to show data flow, and updates a "Packet Details" text block to show packet-level changes (IPs, MACs). Justification: A static chart (like a bar chart) is inappropriate for procedural data. An interactive flowchart provides a far superior, intuitive understanding of the process, fulfilling the "interactive storytelling" goal. Library/Method: Vanilla JS + HTML/Tailwind. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-btn {
+            @apply px-4 py-2 rounded-md text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors;
+        }
+        .nav-btn.active {
+            @apply bg-blue-100 text-blue-700;
+        }
+        .device-card {
+            @apply bg-white border border-neutral-200 rounded-lg shadow-sm p-4 text-center transition-all duration-300;
+        }
+        .device-card.active {
+            @apply border-blue-500 border-2 shadow-lg scale-105;
+        }
+        .device-card.target {
+            @apply border-green-500 border-2;
+        }
+        .device-card.broadcast {
+            @apply border-red-500 border-2;
+        }
+        .packet-flow {
+            @apply text-center text-sm font-mono text-neutral-500;
+        }
+        .packet-flow .arrow {
+            @apply opacity-0 transition-opacity duration-500;
+        }
+        .packet-flow.active .arrow {
+            @apply opacity-100;
+        }
+        .packet-flow.broadcast .arrow {
+            @apply text-red-500;
+        }
+        .packet-flow.unicast .arrow {
+            @apply text-green-600;
+        }
+    </style>
+</head>
+<body class="bg-neutral-50 text-neutral-800">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header class="py-6">
+            <h1 class="text-3xl font-bold text-center text-neutral-900">A Deep Dive into LAN and WAN Networking</h1>
+            <p class="text-center text-neutral-600 mt-2">An interactive guide to common network processes.</p>
+        </header>
+
+        <nav class="flex justify-center space-x-4 bg-white p-3 rounded-lg shadow-sm border border-neutral-200 sticky top-4 z-10">
+            <button id="nav-home" class="nav-btn active" data-target="page-home">Home: The Actors</button>
+            <button id="nav-lan" class="nav-btn" data-target="page-lan">Scenario 1: Local LAN</button>
+            <button id="nav-wan" class="nav-btn" data-target="page-wan">Scenario 2: WAN (Internet)</button>
+        </nav>
+
+        <main class="mt-8">
+            <section id="page-home" class="page-content">
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-neutral-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-neutral-900">Meet the Cast of Devices</h2>
+                    <p class="text-neutral-700 mb-6">These are the devices, or "actors," that will be used in our networking scenarios. Our local network (LAN) is on the `192.168.1.0/24` subnet, meaning all local devices have an IP address starting with `192.168.1`. The public internet (WAN) uses different, globally unique addresses.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="device-card">
+                            <div class="text-4xl mb-2">💻</div>
+                            <h3 class="font-semibold text-lg">`my-pc`</h3>
+                            <ul class="text-sm text-neutral-600 space-y-1 mt-2">
+                                <li><strong>MAC:</strong> `0A:1B:2C:3D:4E:5F`</li>
+                                <li><strong>IP:</strong> `Unknown (at first)`</li>
+                            </ul>
+                        </div>
+                        <div class="device-card">
+                            <div class="text-4xl mb-2">🖧</div>
+                            <h3 class="font-semibold text-lg">`lan-switch`</h3>
+                            <p class="text-sm text-neutral-600 mt-2">A Layer 2 switch that connects local devices using MAC addresses.</p>
+                        </div>
+                        <div class="device-card">
+                            <div class="text-4xl mb-2">🌐</div>
+                            <h3 class="font-semibold text-lg">`gateway-router`</h3>
+                            <ul class="text-sm text-neutral-600 space-y-1 mt-2">
+                                <li><strong>Role:</strong> DHCP, DNS, NAT, Router</li>
+                                <li><strong>LAN IP:</strong> `192.168.1.1`</li>
+                                <li><strong>LAN MAC:</strong> `00:00:5E:00:01:01`</li>
+                                <li><strong>WAN IP:</strong> `203.0.113.10`</li>
+                            </ul>
+                        </div>
+                        <div class="device-card">
+                            <div class="text-4xl mb-2">💾</div>
+                            <h3 class="font-semibold text-lg">`local-fileserver`</h3>
+                            <ul class="text-sm text-neutral-600 space-y-1 mt-2">
+                                <li><strong>IP:</strong> `192.168.1.50`</li>
+                                <li><strong>MAC:</strong> `F0:E1:D2:C3:B4:A5`</li>
+                            </ul>
+                        </div>
+                        <div class="device-card">
+                            <div class="text-4xl mb-2">☁️</div>
+                            <h3 class="font-semibold text-lg">`www.google.com`</h3>
+                            <ul class="text-sm text-neutral-600 space-y-1 mt-2">
+                                <li><strong>Role:</strong> External WAN Server</li>
+                                <li><strong>IP:</strong> `142.250.190.100`</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-lan" class="page-content hidden">
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-neutral-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-neutral-900">Scenario 1: Local LAN Communication</h2>
+                    <p class="text-neutral-700 mb-6">This scenario explores what happens when `my-pc` powers on and tries to connect to the `local-fileserver`. This entire process happens within our local network. Use the buttons below to walk through the process step-by-step and see how the devices communicate.</p>
+                    
+                    <div class="border rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4 text-center">Interactive LAN Diagram</h3>
+                        <div class="flex justify-center items-center space-x-4 md:space-x-8">
+                            <div id="lan-dev-pc" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">💻</div>
+                                <h4 class="font-semibold">`my-pc`</h4>
+                                <p class="text-xs font-mono" id="lan-ip-pc">IP: ???</p>
+                            </div>
+                            
+                            <div id="lan-flow-pc-sw" class="packet-flow">
+                                <p class="arrow text-lg">→&nbsp;Packet&nbsp;→</p>
+                            </div>
+
+                            <div id="lan-dev-sw" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">🖧</div>
+                                <h4 class="font-semibold">`lan-switch`</h4>
+                            </div>
+
+                            <div id="lan-flow-sw-gw" class="packet-flow">
+                                <p class="arrow text-lg">←&nbsp;Packet&nbsp;→</p>
+                            </div>
+                            
+                            <div id="lan-dev-gw" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">🌐</div>
+                                <h4 class="font-semibold">`gateway-router`</h4>
+                                <p class="text-xs font-mono">IP: 192.168.1.1</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-center my-4">
+                            <div id="lan-flow-sw-fs" class="packet-flow">
+                                <p class="arrow text-lg -rotate-90">↓ Packet ↓</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center items-center">
+                            <div id="lan-dev-fs" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">💾</div>
+                                <h4 class="font-semibold">`local-fileserver`</h4>
+                                <p class="text-xs font-mono">IP: 192.168.1.50</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 bg-neutral-50 p-6 rounded-lg border">
+                            <h4 class="font-semibold text-lg mb-2" id="lan-step-title">Step 0: Power On</h4>
+                            <p class="text-neutral-700 text-sm" id="lan-step-context">`my-pc` is connected to the `lan-switch` but has no IP address. Click "Next Step" to begin the DHCP process.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-lg mb-2 text-blue-800">Packet Details</h4>
+                            <div class="font-mono text-xs text-blue-900 space-y-1" id="lan-step-packet">
+                                <p><strong>Type:</strong> None</p>
+                                <p><strong>Src IP:</strong> N/A</p>
+                                <p><strong>Dst IP:</strong> N/A</p>
+                                <p><strong>Src MAC:</strong> N/A</p>
+                                <p><strong>Dst MAC:</strong> N/A</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-4 mt-6">
+                        <button id="lan-prev-btn" class="px-6 py-2 rounded-lg bg-neutral-200 text-neutral-700 hover:bg-neutral-300 disabled:opacity-50">Previous</button>
+                        <button id="lan-next-btn" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">Next Step</button>
+                    </div>
+
+                    <div class="mt-12">
+                        <h3 class="text-xl font-semibold mb-4">Glossary of LAN Terms</h3>
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="font-semibold">DHCP (Dynamic Host Configuration Protocol)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A service that automatically assigns IP addresses and other network settings (like gateway and DNS) to devices.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">ARP (Address Resolution Protocol)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A protocol used to discover the MAC address associated with a specific IP address on the local network. It asks, "Who has this IP address?"</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">CAM Table (Content Addressable Memory)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A table on a switch that maps MAC addresses to physical switch ports, allowing it to send traffic directly to the correct device.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">ARP Table</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A table on a computer or router that maps known IP addresses to their corresponding MAC addresses to avoid future ARP requests.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">DNS - Local (Domain Name System)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A service that translates human-readable local hostnames (like `local-fileserver`) into IP addresses (`192.168.1.50`).</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-wan" class="page-content hidden">
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-neutral-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-neutral-900">Scenario 2: WAN (Internet) Communication</h2>
+                    <p class="text-neutral-700 mb-6">This scenario explores what happens when `my-pc` (which now has an IP) tries to connect to `www.google.com`. This process involves leaving our local network and requires routing, NAT, and the TCP handshake. Use the buttons to walk through the process.</p>
+
+                    <div class="border rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4 text-center">Interactive WAN Diagram</h3>
+                        <div class="flex justify-center items-center space-x-4 md:space-x-8">
+                            <div id="wan-dev-pc" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">💻</div>
+                                <h4 class="font-semibold">`my-pc`</h4>
+                                <p class="text-xs font-mono">IP: 192.168.1.100</p>
+                            </div>
+                            
+                            <div id="wan-flow-pc-gw" class="packet-flow">
+                                <p class="arrow text-lg">→&nbsp;Packet&nbsp;→</p>
+                            </div>
+
+                            <div id="wan-dev-gw" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">🌐</div>
+                                <h4 class="font-semibold">`gateway-router`</h4>
+                                <p class="text-xs font-mono">LAN: 192.168.1.1</p>
+                                <p class="text-xs font-mono">WAN: 203.0.113.10</p>
+                            </div>
+
+                            <div id="wan-flow-gw-inet" class="packet-flow">
+                                <p class="arrow text-lg">←&nbsp;Packet&nbsp;→</p>
+                            </div>
+                            
+                            <div id="wan-dev-inet" class="device-card w-32 md:w-48 border-dashed">
+                                <div class="text-3xl mb-1">☁️</div>
+                                <h4 class="font-semibold">The Internet</h4>
+                            </div>
+
+                            <div id="wan-flow-inet-goog" class="packet-flow">
+                                <p class="arrow text-lg">←&nbsp;Packet&nbsp;→</p>
+                            </div>
+
+                            <div id="wan-dev-goog" class="device-card w-32 md:w-48">
+                                <div class="text-3xl mb-1">G</div>
+                                <h4 class="font-semibold">`google.com`</h4>
+                                <p class="text-xs font-mono">IP: 142.250.190.100</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 bg-neutral-50 p-6 rounded-lg border">
+                            <h4 class="font-semibold text-lg mb-2" id="wan-step-title">Step 0: Ready to Browse</h4>
+                            <p class="text-neutral-700 text-sm" id="wan-step-context">`my-pc` has an IP and wants to connect to `www.google.com`. Click "Next Step" to begin the DNS query.</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-lg mb-2 text-blue-800">Packet Details</h4>
+                            <div class="font-mono text-xs text-blue-900 space-y-1" id="wan-step-packet">
+                                <p><strong>Type:</strong> None</p>
+                                <p><strong>Src IP:</strong> N/A</p>
+                                <p><strong>Dst IP:</strong> N/A</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-4 mt-6">
+                        <button id="wan-prev-btn" class="px-6 py-2 rounded-lg bg-neutral-200 text-neutral-700 hover:bg-neutral-300 disabled:opacity-50">Previous</button>
+                        <button id="wan-next-btn" class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">Next Step</button>
+                    </div>
+
+                    <div class="mt-12">
+                        <h3 class="text-xl font-semibold mb-4">Glossary of WAN Terms</h3>
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="font-semibold">Routing & Routing Table</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">The process of deciding where to send a packet. The Routing Table lists known networks. A "default route" (`0.0.0.0`) is used for all Internet destinations, pointing to the `gateway-router`.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">NAT (Network Address Translation) & NAT Table</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">The process on the router of translating a private IP (e.g., `192.168.1.100`) into its public IP (`203.0.113.10`). The NAT Table tracks these translations so return traffic can be sent back to the correct PC.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">3-Way Handshake (TCP)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">The process to establish a reliable TCP connection: 1. SYN (client), 2. SYN-ACK (server), 3. ACK (client). The connection is now open.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">4-Way Disconnect (TCP)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">The process to gracefully close a TCP connection, involving FIN and ACK packets from both sides.</dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold">Sliding Windows (TCP)</dt>
+                                <dd class="text-sm text-neutral-600 pl-4">A flow control method where the sender can send multiple packets (a "window") at once without waiting for an ACK for each, dramatically improving speed.</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center py-8 mt-8 border-t border-neutral-200">
+            <p class="text-sm text-neutral-500">Interactive Network Visualization</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const pages = document.querySelectorAll('.page-content');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('data-target');
+                    
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    pages.forEach(page => {
+                        if (page.id === targetId) {
+                            page.classList.remove('hidden');
+                        } else {
+                            page.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            initLanScenario();
+            initWanScenario();
+        });
+
+        function initLanScenario() {
+            let currentStep = 0;
+            const nextBtn = document.getElementById('lan-next-btn');
+            const prevBtn = document.getElementById('lan-prev-btn');
+            
+            const title = document.getElementById('lan-step-title');
+            const context = document.getElementById('lan-step-context');
+            const packet = document.getElementById('lan-step-packet');
+            
+            const pc = document.getElementById('lan-dev-pc');
+            const sw = document.getElementById('lan-dev-sw');
+            const gw = document.getElementById('lan-dev-gw');
+            const fs = document.getElementById('lan-dev-fs');
+            const pcIp = document.getElementById('lan-ip-pc');
+
+            const flowPcSw = document.getElementById('lan-flow-pc-sw');
+            const flowSwGw = document.getElementById('lan-flow-sw-gw');
+            const flowSwFs = document.getElementById('lan-flow-sw-fs');
+
+            const allDevs = [pc, sw, gw, fs];
+            const allFlows = [flowPcSw, flowSwGw, flowSwFs];
+
+            const steps = [
+                {
+                    title: "Step 0: Power On",
+                    context: "`my-pc` is connected, but has no IP address. Click 'Next Step' to begin the DHCP process.",
+                    packet: `<p><strong>Type:</strong> None</p>`,
+                    ip: "IP: ???",
+                    active: [],
+                    target: [],
+                    broadcast: [],
+                    flows: []
+                },
+                {
+                    title: "Step 1: DHCP Discover",
+                    context: "`my-pc` sends a broadcast (to all devices) asking 'I need an IP address!'. The switch floods this to all ports.",
+                    packet: `<p><strong>Type:</strong> DHCP Discover</p><p><strong>Src IP:</strong> 0.0.0.0</p><p><strong>Dst IP:</strong> 255.255.255.255</p><p><strong>Src MAC:</strong> 0A:1B:..:5F</p><p><strong>Dst MAC:</strong> FF:FF:..:FF</p>`,
+                    ip: "IP: ???",
+                    active: [pc],
+                    target: [],
+                    broadcast: [sw, gw, fs],
+                    flows: [{el: flowPcSw, dir: 'out', type: 'broadcast'}]
+                },
+                {
+                    title: "Step 2: DHCP Offer",
+                    context: "The `gateway-router` (our DHCP server) hears the request and sends a unicast 'Offer' directly back to `my-pc`'s MAC address: 'You can have 192.168.1.100'.",
+                    packet: `<p><strong>Type:</strong> DHCP Offer</p><p><strong>Src IP:</strong> 192.168.1.1</p><p><strong>Dst IP:</strong> 255.255.255.255 (but unicast to MAC)</p><p><strong>Src MAC:</strong> 00:00:..:01</p><p><strong>Dst MAC:</strong> 0A:1B:..:5F</p>`,
+                    ip: "IP: ???",
+                    active: [gw],
+                    target: [pc],
+                    broadcast: [],
+                    flows: [{el: flowSwGw, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 3: DHCP Request & ACK",
+                    context: "`my-pc` accepts the offer and gets its IP. (Skipping Request/ACK for brevity). **Result: `my-pc` now has IP 192.168.1.100!**",
+                    packet: `<p><strong>Type:</strong> DHCP ACK</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [pc, gw],
+                    target: [],
+                    broadcast: [],
+                    flows: []
+                },
+                {
+                    title: "Step 4: DNS Query (via ARP)",
+                    context: "User tries to access `local-fileserver`. PC needs its IP. PC first ARPs for the DNS server (the gateway, 192.168.1.1): 'Who has 192.168.1.1?'",
+                    packet: `<p><strong>Type:</strong> ARP Request</p><p><strong>Msg:</strong> 'Who has 192.168.1.1?'</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [pc],
+                    target: [],
+                    broadcast: [sw, gw, fs],
+                    flows: [{el: flowPcSw, dir: 'out', type: 'broadcast'}]
+                },
+                {
+                    title: "Step 5: ARP Reply",
+                    context: "`gateway-router` replies: 'I have 192.168.1.1 at MAC 00:00:..:01'. PC stores this in its ARP Table.",
+                    packet: `<p><strong>Type:</strong> ARP Reply</p><p><strong>Msg:</strong> '192.168.1.1 is at 00:00:..:01'</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [gw],
+                    target: [pc],
+                    broadcast: [],
+                    flows: [{el: flowSwGw, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 6: DNS Query (Actual)",
+                    context: "Now PC sends its DNS query to the gateway: 'What is the IP for `local-fileserver`?' The router replies: 'It is 192.168.1.50'.",
+                    packet: `<p><strong>Type:</strong> DNS Query/Reply</p><p><strong>Query:</strong> 'IP for local-fileserver?'</p><p><strong>Reply:</strong> '192.168.1.50'</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [pc],
+                    target: [gw],
+                    broadcast: [],
+                    flows: [{el: flowPcSw, dir: 'out', type: 'unicast'}, {el: flowSwGw, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 7: ARP for Server",
+                    context: "PC knows the IP (192.168.1.50) but not the MAC. It sends a new ARP Request: 'Who has 192.168.1.50?'",
+                    packet: `<p><strong>Type:</strong> ARP Request</p><p><strong>Msg:</strong> 'Who has 192.168.1.50?'</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [pc],
+                    target: [],
+                    broadcast: [sw, gw, fs],
+                    flows: [{el: flowPcSw, dir: 'out', type: 'broadcast'}]
+                },
+                {
+                    title: "Step 8: ARP Reply from Server",
+                    context: "The `local-fileserver` replies directly: 'I have 192.168.1.50 at MAC F0:E1:..:A5'. PC stores this.",
+                    packet: `<p><strong>Type:</strong> ARP Reply</p><p><strong>Msg:</strong> '192.168.1.50 is at F0:E1:..:A5'</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [fs],
+                    target: [pc],
+                    broadcast: [],
+                    flows: [{el: flowSwFs, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 9: Final Communication",
+                    context: "Success! `my-pc` now knows both the IP and MAC for the fileserver and can send data directly to it.",
+                    packet: `<p><strong>Type:</strong> SMB Data</p><p><strong>Src IP:</strong> 192.168.1.100</p><p><strong>Dst IP:</strong> 192.168.1.50</p><p><strong>Src MAC:</strong> 0A:1B:..:5F</p><p><strong>Dst MAC:</strong> F0:E1:..:A5</p>`,
+                    ip: "IP: 192.168.1.100",
+                    active: [pc],
+                    target: [fs],
+                    broadcast: [],
+                    flows: [{el: flowPcSw, dir: 'out', type: 'unicast'}, {el: flowSwFs, dir: 'out', type: 'unicast'}]
+                }
+            ];
+
+            function update() {
+                const s = steps[currentStep];
+                
+                title.textContent = s.title;
+                context.textContent = s.context;
+                packet.innerHTML = s.packet;
+                pcIp.textContent = s.ip;
+
+                allDevs.forEach(d => {
+                    d.classList.remove('active', 'target', 'broadcast');
+                    if (s.active.includes(d)) d.classList.add('active');
+                    if (s.target.includes(d)) d.classList.add('target');
+                    if (s.broadcast.includes(d)) d.classList.add('broadcast');
+                });
+                
+                allFlows.forEach(f => {
+                    f.classList.remove('active', 'broadcast', 'unicast');
+                    f.firstElementChild.innerHTML = "";
+                });
+
+                s.flows.forEach(flow => {
+                    flow.el.classList.add('active', flow.type);
+                    if (flow.dir === 'out') {
+                        flow.el.firstElementChild.innerHTML = '→&nbsp;Packet&nbsp;→';
+                    } else {
+                        flow.el.firstElementChild.innerHTML = '←&nbsp;Packet&nbsp;←';
+                    }
+                });
+
+                prevBtn.disabled = (currentStep === 0);
+                nextBtn.disabled = (currentStep === steps.length - 1);
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    update();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    update();
+                }
+            });
+
+            update();
+        }
+
+        function initWanScenario() {
+            let currentStep = 0;
+            const nextBtn = document.getElementById('wan-next-btn');
+            const prevBtn = document.getElementById('wan-prev-btn');
+            
+            const title = document.getElementById('wan-step-title');
+            const context = document.getElementById('wan-step-context');
+            const packet = document.getElementById('wan-step-packet');
+            
+            const pc = document.getElementById('wan-dev-pc');
+            const gw = document.getElementById('wan-dev-gw');
+            const inet = document.getElementById('wan-dev-inet');
+            const goog = document.getElementById('wan-dev-goog');
+
+            const flowPcGw = document.getElementById('wan-flow-pc-gw');
+            const flowGwInet = document.getElementById('wan-flow-gw-inet');
+            const flowInetGoog = document.getElementById('wan-flow-inet-goog');
+
+            const allDevs = [pc, gw, inet, goog];
+            const allFlows = [flowPcGw, flowGwInet, flowInetGoog];
+
+            const steps = [
+                {
+                    title: "Step 0: Ready to Browse",
+                    context: "`my-pc` has an IP (192.168.1.100) and wants to connect to `www.google.com`. Click 'Next Step' to begin the DNS query.",
+                    packet: `<p><strong>Type:</strong> None</p>`,
+                    active: [pc],
+                    target: [goog],
+                    flows: []
+                },
+                {
+                    title: "Step 1: DNS Query",
+                    context: "`my-pc` asks its DNS server (the router): 'What is the IP for www.google.com?'. The router forwards this to the internet and gets a reply.",
+                    packet: `<p><strong>Type:</strong> DNS Query/Reply</p><p><strong>Query:</strong> 'IP for google.com?'</p><p><strong>Reply:</strong> '142.250.190.100'</p>`,
+                    active: [pc],
+                    target: [gw],
+                    flows: [{el: flowPcGw, dir: 'out', type: 'unicast'}]
+                },
+                {
+                    title: "Step 2: Routing Decision & TCP SYN",
+                    context: "PC knows the IP. It's not local, so it sends the packet to its default gateway (the router). This is the first packet of the 3-Way Handshake (SYN).",
+                    packet: `<p><strong>Type:</strong> TCP SYN</p><p><strong>Src IP:</strong> 192.168.1.100:50123</p><p><strong>Dst IP:</strong> 142.250.190.100:443</p>`,
+                    active: [pc],
+                    target: [gw],
+                    flows: [{el: flowPcGw, dir: 'out', type: 'unicast'}]
+                },
+                {
+                    title: "Step 3: NAT (Network Address Translation)",
+                    context: "The router receives the packet. It performs NAT: it translates the *private* source IP to its *public* IP (`203.0.113.10`) and sends the packet to Google.",
+                    packet: `<p><strong>Type:</strong> TCP SYN (NAT-ed)</p><p><strong>Src IP:</strong> <span class='text-red-600 font-bold'>203.0.113.10:9001</span></p><p><strong>Dst IP:</strong> 142.250.190.100:443</p>`,
+                    active: [gw],
+                    target: [goog],
+                    flows: [{el: flowGwInet, dir: 'out', type: 'unicast'}, {el: flowInetGoog, dir: 'out', type: 'unicast'}]
+                },
+                {
+                    title: "Step 4: TCP SYN-ACK",
+                    context: "Google's server replies (SYN-ACK) to the router's public IP. The router receives it.",
+                    packet: `<p><strong>Type:</strong> TCP SYN-ACK</p><p><strong>Src IP:</strong> 142.250.190.100:443</p><p><strong>Dst IP:</strong> <span class='text-red-600 font-bold'>203.0.113.10:9001</span></p>`,
+                    active: [goog],
+                    target: [gw],
+                    flows: [{el: flowInetGoog, dir: 'in', type: 'unicast'}, {el: flowGwInet, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 5: De-NAT & Handshake Complete",
+                    context: "The router looks up the port (9001) in its NAT table, translates the destination IP *back* to `192.168.1.100`, and forwards the packet. `my-pc` sends the final ACK (not shown). **Connection is Established!**",
+                    packet: `<p><strong>Type:</strong> TCP SYN-ACK (De-NAT-ed)</p><p><strong>Src IP:</strong> 142.250.190.100:443</p><p><strong>Dst IP:</strong> <span class='text-green-600 font-bold'>192.168.1.100:50123</span></p>`,
+                    active: [gw],
+                    target: [pc],
+                    flows: [{el: flowPcGw, dir: 'in', type: 'unicast'}]
+                },
+                {
+                    title: "Step 6: Data Transfer (Sliding Windows)",
+                    context: "The browser sends its HTTPS request. The server replies with webpage data. Thanks to Sliding Windows, it sends many packets at once, making it fast.",
+                    packet: `<p><strong>Type:</strong> HTTPS Data</p><p><strong>Info:</strong> Data flows in both directions, all being NAT-ed by the router.</p>`,
+                    active: [pc, goog],
+                    target: [pc, goog],
+                    flows: [{el: flowPcGw, dir: 'out', type: 'unicast'}, {el: flowGwInet, dir: 'out', type: 'unicast'}, {el: flowInetGoog, dir: 'out', type: 'unicast'}]
+                },
+                {
+                    title: "Step 7: Connection Close (4-Way Disconnect)",
+                    context: "The page is loaded. The connection is closed by both sides sending FIN and ACK packets. The router then removes the NAT entry.",
+                    packet: `<p><strong>Type:</strong> TCP FIN/ACK</p><p><strong>Info:</strong> Connection gracefully closed.</p>`,
+                    active: [pc, goog],
+                    target: [],
+                    flows: []
+                }
+            ];
+
+            function update() {
+                const s = steps[currentStep];
+                
+                title.textContent = s.title;
+                context.textContent = s.context;
+                packet.innerHTML = s.packet;
+
+                allDevs.forEach(d => {
+                    d.classList.remove('active', 'target');
+                    if (s.active.includes(d)) d.classList.add('active');
+                    if (s.target.includes(d)) d.classList.add('target');
+                });
+                
+                allFlows.forEach(f => {
+                    f.classList.remove('active', 'unicast');
+                    f.firstElementChild.innerHTML = "";
+                });
+
+                s.flows.forEach(flow => {
+                    flow.el.classList.add('active', flow.type);
+                    if (flow.dir === 'out') {
+                        flow.el.firstElementChild.innerHTML = '→&nbsp;Packet&nbsp;→';
+                    } else {
+                        flow.el.firstElementChild.innerHTML = '←&nbsp;Packet&nbsp;←';
+                    }
+                });
+
+                prevBtn.disabled = (currentStep === 0);
+                nextBtn.disabled = (currentStep === steps.length - 1);
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    update();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    update();
+                }
+            });
+
+            update();
+        }
+
+    </script>
+</body>
+</html>
+
+
+
+
+

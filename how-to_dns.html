@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive DNS Resolution Deep Dive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .step {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .step-active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.5);
+        }
+        
+        .step-line {
+            height: 2px;
+            flex-grow: 1;
+        }
+        
+        .step-line-active {
+            background-color: #4f46e5;
+        }
+
+        .diagram-node {
+            position: absolute;
+            border: 2px solid;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        
+        .diagram-node-active {
+            transform: scale(1.05);
+            border-width: 3px;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.1);
+        }
+
+        .packet {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+            opacity: 0;
+            transition: all 0.8s ease-in-out;
+            box-shadow: 0 0 10px 3px #4f46e5;
+            z-index: 10;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .packet-active {
+            opacity: 1;
+            animation: pulse 1s infinite;
+        }
+        
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Chosen Palette: Calm Neutrals (Warm gray background, indigo accents) -->
+    <!-- Application Structure Plan: A step-by-step interactive guide. A stepper component at the top navigates between the 9 steps of DNS resolution. The layout is split: one side shows a dynamic, animated diagram of the network components, and the other side shows the detailed textual explanation for the current step. This structure was chosen because the source report is a linear process, and this design allows users to visually follow the process (the diagram) while reading the details (the text), reinforcing learning. A modal contains the "Cast of Characters" for easy reference. -->
+    <!-- Visualization & Content Choices: Report Info: 9-step DNS process. Goal: Teach the process flow. Viz/Presentation: Custom HTML/CSS/JS diagram (not a chart) showing network nodes (PC, Router, Servers) and animated 'packets' (HTML divs) moving between them. Interaction: Clicking a step (1-9) updates the text description and triggers an animation in the diagram corresponding to that step (e.g., showing the ARP broadcast in Step 3, or the iterative queries in Step 6). Justification: A static report is hard to follow. A visual, animated diagram synchronized with the text makes the complex flow of packets and queries easy to understand. Library/Method: Vanilla JS for state management and DOM manipulation (classList toggles, setTimeout animations). Tailwind CSS for layout and styling. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="container mx-auto max-w-7xl p-4 md:p-8">
+        
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-3xl md:text-5xl font-bold text-indigo-700 mb-2">DNS Resolution Deep Dive</h1>
+            <p class="text-lg md:text-xl text-gray-600">An Interactive Journey from LAN to WAN</p>
+            <button id="open-modal-btn" class="mt-4 px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg shadow-sm hover:bg-indigo-50 transition">
+                View Cast of Characters
+            </button>
+        </header>
+
+        <!-- Stepper Navigation -->
+        <nav class="mb-8 md:mb-12">
+            <div id="stepper" class="flex items-center justify-between w-full max-w-4xl mx-auto">
+                <!-- Steps will be injected by JS -->
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            
+            <!-- Diagram Container -->
+            <section class="lg:col-span-3">
+                <div class="chart-container relative w-full max-w-4xl mx-auto h-[60vh] max-h-[650px] rounded-lg bg-gray-100 p-4 overflow-hidden shadow-inner border border-gray-200">
+                    
+                    <!-- LAN/WAN Zones -->
+                    <div class="absolute top-0 left-0 bottom-0 w-1/3 bg-blue-50 border-r-2 border-blue-200 border-dashed">
+                        <span class="absolute top-2 left-2 text-blue-800 font-semibold opacity-70">LAN (192.168.1.x)</span>
+                    </div>
+                    <div class="absolute top-0 right-0 bottom-0 w-2/3 bg-green-50">
+                        <span class="absolute top-2 right-2 text-green-800 font-semibold opacity-70">WAN (Public Internet)</span>
+                    </div>
+
+                    <!-- Diagram Nodes -->
+                    <div id="node-pc" class="diagram-node border-indigo-500" style="top: 45%; left: 5%;">PC</div>
+                    <div id="node-router" class="diagram-node border-indigo-500" style="top: 45%; left: 25%;">Router</div>
+                    
+                    <div id="node-isp" class="diagram-node border-green-600" style="top: 45%; left: 45%;">ISP Resolver</div>
+                    <div id="node-root" class="diagram-node border-green-600" style="top: 15%; left: 70%;">Root</div>
+                    <div id="node-tld" class="diagram-node border-green-600" style="top: 45%; left: 70%;">.com TLD</div>
+                    <div id="node-auth" class="diagram-node border-green-600" style="top: 75%; left: 70%;">Authoritative</div>
+
+                    <!-- Packets -->
+                    <div id="packet-arp-b" class="packet bg-yellow-500 shadow-yellow-500" style="top: 50%; left: 10%;"></div>
+                    <div id="packet-arp-r" class="packet bg-yellow-500 shadow-yellow-500" style="top: 50%; left: 20%;"></div>
+                    <div id="packet-pc-router" class="packet" style="top: 50%; left: 15%;"></div>
+                    <div id="packet-router-isp" class="packet" style="top: 50%; left: 35%;"></div>
+                    <div id="packet-isp-root" class="packet" style="top: 30%; left: 58%;"></div>
+                    <div id="packet-isp-tld" class="packet" style="top: 50%; left: 58%;"></div>
+                    <div id="packet-isp-auth" class="packet" style="top: 60%; left: 58%;"></div>
+
+                </div>
+            </section>
+
+            <!-- Text Content Container -->
+            <section class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                <h2 id="step-title" class="text-2xl font-bold text-indigo-700 mb-4"></h2>
+                <div id="step-content" class="text-gray-700 space-y-4 leading-relaxed">
+                    <!-- Content injected by JS -->
+                </div>
+                
+                <div class="flex justify-between mt-8">
+                    <button id="prev-btn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <button id="next-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-overlay" class="absolute inset-0 bg-black opacity-0"></div>
+        <div id="modal-content" class="relative bg-white w-full max-w-2xl p-6 md:p-8 rounded-lg shadow-xl transform scale-95 opacity-0">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-indigo-700 mb-6">Cast of Characters</h2>
+            
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto">
+                <div>
+                    <h3 class="font-semibold text-lg">Your PC (The Client)</h3>
+                    <ul class="list-disc list-inside text-gray-600 pl-2">
+                        <li><strong>Hostname:</strong> `DESKTOP-B4K5`</li>
+                        <li><strong>LAN IP Address:</strong> `192.168.1.100`</li>
+                        <li><strong>MAC Address:</strong> `00:1A:2B:3C:4D:5E`</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-lg">Your Router (Gateway & Local DNS)</h3>
+                    <ul class="list-disc list-inside text-gray-600 pl-2">
+                        <li><strong>Hostname:</strong> `ROUTER-GATEWAY`</li>
+                        <li><strong>LAN IP Address:</strong> `192.168.1.1`</li>
+                        <li><strong>LAN MAC Address:</strong> `6A:7B:8C:9D:0E:1F`</li>
+                        <li><strong>WAN (Public) IP Address:</strong> `203.0.113.50`</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg">ISP's Recursive DNS Server</h3>
+                    <ul class="list-disc list-inside text-gray-600 pl-2">
+                        <li><strong>IP Address:</strong> `209.18.47.61`</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-lg">The Target Website</h3>
+                    <ul class="list-disc list-inside text-gray-600 pl-2">
+                        <li><strong>Domain:</strong> `www.example-site.com`</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg">The DNS Hierarchy</h3>
+                    <ul class="list-disc list-inside text-gray-600 pl-2">
+                        <li><strong>Root DNS Server:</strong> IP: `198.41.0.4`</li>
+                        <li><strong>TLD DNS Server (.com):</strong> IP: `192.5.6.30`</li>
+                        <li><strong>Authoritative Name Server:</strong> IP: `198.51.100.77`</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const stepData = [
+                {
+                    title: "Step 1: The Request (Inside Your PC)",
+                    content: `
+                        <p>You type \`http://www.example-site.com\` into your browser on \`DESKTOP-B4K5\` and hit Enter.</p>
+                        <p>The browser and your Operating System (OS) must translate this human-readable domain into a machine-readable IP address to make a connection.</p>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-pc'],
+                        activePackets: []
+                    }
+                },
+                {
+                    title: "Step 2: Checking Local Caches (LAN)",
+                    content: `
+                        <p>Before doing any network-intensive work, your PC checks if it already knows the answer. It checks in this order:</p>
+                        <ol class="list-decimal list-inside space-y-2 mt-2">
+                            <li><strong>Browser Cache:</strong> (Empty)</li>
+                            <li><strong>OS \`hosts\` File:</strong> (No entry)</li>
+                            <li><strong>OS DNS Cache:</strong> (Empty)</li>
+                        </ol>
+                        <p class="mt-2">Since all local caches are empty, the OS must send a DNS query to its configured DNS server: your router (\`192.168.1.1\`).</p>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-pc'],
+                        activePackets: []
+                    }
+                },
+                {
+                    title: "Step 3: Finding the Router (LAN Activity: ARP)",
+                    content: `
+                        <p>Your PC (\`192.168.1.100\`) needs to send a packet to the router (\`192.168.1.1\`), but it only knows its IP, not its physical MAC address. It uses the <strong>Address Resolution Protocol (ARP)</strong>.</p>
+                        <ol class="list-decimal list-inside space-y-2 mt-2">
+                            <li><strong>ARP Broadcast:</strong> \`DESKTOP-B4K5\` shouts to everyone on the LAN: "Who has the IP \`192.168.1.1\`?"</li>
+                            <li><strong>ARP Reply:</strong> The router (\`ROUTER-GATEWAY\`) replies directly: "I am \`192.168.1.1\`. My MAC address is \`6A:7B:8C:9D:0E:1F\`."</li>
+                        </ol>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-pc', 'node-router'],
+                        activePackets: ['packet-arp-b', 'packet-arp-r']
+                    }
+                },
+                {
+                    title: "Step 4: The Local DNS Query (LAN)",
+                    content: `
+                        <p>\`DESKTOP-B4K5\` constructs a DNS query packet and sends it to the router's MAC address.</p>
+                        <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                            <li><strong>Source IP:</strong> \`192.168.1.100\` (Your PC)</li>
+                            <li><strong>Destination IP:</strong> \`192.168.1.1\` (Your Router)</li>
+                            <li><strong>Destination Port:</strong> \`53\` (DNS)</li>
+                            <li><strong>Question:</strong> "What is the \`A\` record for \`www.example-site.com\`?"</li>
+                        </ul>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-pc', 'node-router'],
+                        activePackets: ['packet-pc-router']
+                    }
+                },
+                {
+                    title: "Step 5: The Router and NAT (LAN to WAN)",
+                    content: `
+                        <p>The router receives the packet. Its own cache is also empty. It must forward the query to the ISP's Recursive Resolver (\`209.18.47.61\`).</p>
+                        <p>It performs <strong>Network Address Translation (NAT)</strong>, replacing your private IP with its own public IP (\`203.0.113.50\`) and sends the query to the ISP.</p>
+                        <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                            <li><strong>Source IP:</strong> \`203.0.113.50\` (Router's Public IP)</li>
+                            <li><strong>Destination IP:</strong> \`209.18.47.61\` (ISP's DNS)</li>
+                        </ul>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-router', 'node-isp'],
+                        activePackets: ['packet-router-isp']
+                    }
+                },
+                {
+                    title: "Step 6: The Recursive Query (WAN)",
+                    content: `
+                        <p>The ISP's Recursive Resolver does the heavy lifting by performing *iterative queries*:</p>
+                        <ol class="list-decimal list-inside space-y-2 mt-2">
+                            <li><strong>Query 1 (Root):</strong> Asks a Root Server, which refers it to the \`.com\` TLD servers.</li>
+                            <li><strong>Query 2 (TLD):</strong> Asks a \`.com\` TLD Server, which refers it to the authoritative server for \`example-site.com\`.</li>
+                            <li><strong>Query 3 (Authoritative):</strong> Asks \`ns1.dnsprovider.com\`, which finally provides the answer: <strong>\`104.16.20.22\`</strong>.</li>
+                        </ol>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-isp', 'node-root', 'node-tld', 'node-auth'],
+                        activePackets: ['packet-isp-root', 'packet-isp-tld', 'packet-isp-auth']
+                    }
+                },
+                {
+                    title: "Step 7: The Response Returns (WAN)",
+                    content: `
+                        <p>The ISP's resolver now has the answer: \`www.example-site.com\` -> \`104.16.20.22\`.</p>
+                        <p>It caches this answer (for its TTL, e.g., 300 seconds) and sends the DNS response packet back to the IP and port that asked for it: your router's public IP.</p>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-isp', 'node-router'],
+                        activePackets: ['packet-router-isp']
+                    }
+                },
+                {
+                    title: "Step 8: Back to Your PC (LAN)",
+                    content: `
+                        <p>The router receives the response. It checks its NAT table and sees the response belongs to your PC (\`192.168.1.100\`).</p>
+                        <p>It caches the answer locally and forwards the DNS response packet across the LAN to your PC's IP and MAC address.</p>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-router', 'node-pc'],
+                        activePackets: ['packet-pc-router']
+                    }
+                },
+                {
+                    title: "Step 9: Resolution Complete",
+                    content: `
+                        <p>Your PC receives the answer! The OS caches the result and passes the IP address \`104.16.20.22\` to your browser.</p>
+                        <p>Your browser now opens a new TCP connection to \`104.16.20.22\` on port 443 (HTTPS) to begin fetching the actual webpage. The DNS process is complete.</p>
+                    `,
+                    diagram: {
+                        activeNodes: ['node-pc'],
+                        activePackets: []
+                    }
+                }
+            ];
+
+            let currentStep = 0;
+            const totalSteps = stepData.length;
+
+            const stepperEl = document.getElementById('stepper');
+            const titleEl = document.getElementById('step-title');
+            const contentEl = document.getElementById('step-content');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            const allNodes = document.querySelectorAll('.diagram-node');
+            const allPackets = document.querySelectorAll('.packet');
+            
+            const modal = document.getElementById('modal');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalContent = document.getElementById('modal-content');
+            const openModalBtn = document.getElementById('open-modal-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            function createStepper() {
+                for (let i = 0; i < totalSteps; i++) {
+                    const stepCircle = document.createElement('button');
+                    stepCircle.className = 'step w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full font-bold bg-white border-2 border-gray-300 text-gray-500';
+                    stepCircle.textContent = i + 1;
+                    stepCircle.dataset.step = i;
+                    stepCircle.addEventListener('click', () => {
+                        currentStep = i;
+                        renderStep();
+                    });
+                    stepperEl.appendChild(stepCircle);
+
+                    if (i < totalSteps - 1) {
+                        const line = document.createElement('div');
+                        line.className = 'step-line bg-gray-300';
+                        stepperEl.appendChild(line);
+                    }
+                }
+            }
+
+            function updateStepper() {
+                const steps = stepperEl.querySelectorAll('.step');
+                const lines = stepperEl.querySelectorAll('.step-line');
+                
+                steps.forEach((step, index) => {
+                    step.classList.toggle('step-active', index === currentStep);
+                    step.classList.toggle('bg-indigo-600', index <= currentStep);
+                    step.classList.toggle('border-indigo-600', index <= currentStep);
+                    step.classList.toggle('text-white', index <= currentStep);
+                    step.classList.toggle('bg-white', index > currentStep);
+                    step.classList.toggle('border-gray-300', index > currentStep);
+                    step.classList.toggle('text-gray-500', index > currentStep);
+                });
+
+                lines.forEach((line, index) => {
+                    line.classList.toggle('step-line-active', index < currentStep);
+                    line.classList.toggle('bg-gray-300', index >= currentStep);
+                });
+            }
+
+            function updateDiagram(diagramState) {
+                allNodes.forEach(node => {
+                    node.classList.remove('diagram-node-active', 'border-indigo-500', 'border-green-600');
+                    if (diagramState.activeNodes.includes(node.id)) {
+                        node.classList.add('diagram-node-active');
+                        if (node.id.startsWith('node-pc') || node.id.startsWith('node-router')) {
+                            node.classList.add('border-indigo-500');
+                        } else {
+                            node.classList.add('border-green-600');
+                        }
+                    } else {
+                        if (node.id.startsWith('node-pc') || node.id.startsWith('node-router')) {
+                            node.classList.add('border-indigo-500');
+                        } else {
+                            node.classList.add('border-green-600');
+                        }
+                    }
+                });
+
+                allPackets.forEach(packet => packet.classList.remove('packet-active'));
+                
+                diagramState.activePackets.forEach((packetId, index) => {
+                    const packet = document.getElementById(packetId);
+                    if (packet) {
+                        setTimeout(() => {
+                            packet.classList.add('packet-active');
+                        }, index * 300);
+                    }
+                });
+            }
+
+            function renderStep() {
+                const step = stepData[currentStep];
+                
+                titleEl.textContent = step.title;
+                contentEl.innerHTML = step.content;
+                
+                updateStepper();
+                updateDiagram(step.diagram);
+
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = currentStep === totalSteps - 1;
+            }
+
+            function openModal() {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalOverlay.classList.remove('opacity-0');
+                    modalOverlay.classList.add('opacity-50');
+                    modalContent.classList.remove('opacity-0', 'scale-95');
+                    modalContent.classList.add('opacity-100', 'scale-100');
+                }, 10);
+            }
+
+            function closeModal() {
+                modalOverlay.classList.remove('opacity-50');
+                modalOverlay.classList.add('opacity-0');
+                modalContent.classList.remove('opacity-100', 'scale-100');
+                modalContent.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    renderStep();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < totalSteps - 1) {
+                    currentStep++;
+                    renderStep();
+                }
+            });
+            
+            openModalBtn.addEventListener('click', openModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', closeModal);
+
+            createStepper();
+            renderStep();
+        });
+    </script>
+</body>
+</html>
+
+
+

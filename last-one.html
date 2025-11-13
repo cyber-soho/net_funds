@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Networking Concepts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Calm Neutrals (e.g., bg-neutral-50, text-neutral-800, accent-blue-600) -->
+    <!-- Application Structure Plan: The SPA is structured as a single-page, scrollable journey. It starts with a high-level choice (TCP vs. UDP) and then allows the user to "zoom in" to a deep dive on TCP (Header, Windowing), followed by "zooming out" to see how packets move in the wider network (NAT/PAT, Traceroute). This thematic, top-down structure is more logical for a learner than separate documents. Navigation is handled by a sticky header, and interactivity is provided by toggles, interactive diagrams, a dynamic Chart.js chart, and step-by-step process simulations, all designed to make abstract concepts tangible. -->
+    <!-- Visualization & Content Choices: 
+        1. TCP vs. UDP (Report Info: Comparison) -> Goal: Compare -> Viz: Button Toggle. Interaction: Click buttons to show/hide respective content blocks. Justification: Cleaner, more direct comparison.
+        2. TCP Header (Report Info: Header fields) -> Goal: Organize/Inform -> Viz: HTML/CSS Grid Diagram. Interaction: Click on each field to display its definition in a side panel. Justification: More engaging and reinforces the structure better than a static list.
+        3. Window Scaling (Report Info: 65k limit problem) -> Goal: Show Impact/Change -> Viz: Chart.js Bar Chart. Interaction: A "Latency" slider dynamically updates chart data (throughput calculation) and re-renders the chart. Justification: Visually demonstrates the "why" behind window scaling in a powerful, interactive way.
+        4. NAT/PAT (Report Info: Translation process) -> Goal: Show Process -> Viz: HTML/CSS/JS Step-Through Sim. Interaction: "Next Step" button animates a packet and dynamically updates a "NAT Table" (HTML table). Justification: Makes the abstract packet re-writing process concrete and easy to follow.
+        5. Traceroute (Report Info: TTL trick) -> Goal: Show Process -> Viz: HTML/CSS/JS Sim. Interaction: "Send Probe" button with TTL selection animates a packet to the correct router, which "replies" with an ICMP message. Justification: Visually simulates the exact logic of traceroute, clarifying the TTL-expiry mechanism.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .header-field {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .header-field:hover {
+            transform: scale(1.05);
+            background-color: #dbeafe; /* Tailwind blue-100 */
+        }
+        .header-field.active {
+            background-color: #93c5fd; /* Tailwind blue-300 */
+            border-color: #3b82f6; /* Tailwind blue-500 */
+        }
+        .sim-packet {
+            transition: all 1s ease-in-out;
+        }
+        .sim-router {
+            transition: all 0.3s ease;
+        }
+        .sim-flash-red {
+            animation: flash-red 0.5s ease;
+        }
+        @keyframes flash-red {
+            0%, 100% { background-color: #f3f4f6; } /* gray-100 */
+            50% { background-color: #fecaca; } /* red-200 */
+        }
+        .sim-flash-green {
+            animation: flash-green 0.5s ease;
+        }
+        @keyframes flash-green {
+            0%, 100% { background-color: #f3f4f6; } /* gray-100 */
+            50% { background-color: #d1fae5; } /* green-200 */
+        }
+    </style>
+</head>
+
+<body class="bg-neutral-50 text-neutral-800">
+
+    <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-bold text-xl text-blue-600">Network Concepts</span>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                    <a href="#tcp-udp" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium">TCP vs. UDP</a>
+                    <a href="#tcp-deep-dive" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium">TCP Deep Dive</a>
+                    <a href="#nat-pat" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium">NAT / PAT</a>
+                    <a href="#traceroute" class="text-gray-500 hover:text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium">Traceroute</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+
+        <section id="intro" class="text-center mb-24">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Welcome to the Network.</h1>
+            <p class="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+                These concepts power our digital world. Let's move beyond static text and explore how data *really*
+                travels.
+            </p>
+        </section>
+
+        <section id="tcp-udp" class="mb-24 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Choosing Your Delivery Service</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+                    At the Transport Layer (Layer 4), applications must choose a protocol. This choice is a
+                    fundamental tradeoff between reliability and speed. Click the buttons below to explore the two main
+                    options.
+                </p>
+                <div class="flex justify-center space-x-4 mb-8">
+                    <button id="show-tcp-btn"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        TCP: The Reliable Service
+                    </button>
+                    <button id="show-udp-btn"
+                        class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                        UDP: The Speedy Service
+                    </button>
+                </div>
+            </div>
+
+            <div id="tcp-content" class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">TCP (Transmission Control Protocol)</h3>
+                <p class="text-gray-700 mb-6 text-lg">
+                    TCP is like a registered mail service with tracking and delivery confirmation. It's built to be
+                    <strong>reliable</strong>. It establishes a formal connection (the "3-Way Handshake") before any
+                    data is sent.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Key Characteristics</h4>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700">
+                            <li><strong>Connection-Oriented:</strong> A 3-Way Handshake (SYN, SYN/ACK, ACK) must
+                                complete before data transfer begins.</li>
+                            <li><strong>Reliable Delivery:</strong> Uses Sequence Numbers and Acknowledgments (ACKs) to
+                                ensure every segment is received. If an ACK isn't returned, the data is
+                                <strong>re-transmitted</strong>.</li>
+                            <li><strong>Ordered Delivery:</strong> Sequence numbers allow the receiver to re-assemble
+                                segments in the correct order, even if they arrive out of sequence.</li>
+                            <li><strong>Flow Control:</strong> Uses a "window" system to ensure the sender doesn't
+                                overwhelm the receiver's buffers.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Common Use Cases</h4>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700">
+                            <li><strong>Web Browsing (HTTP/HTTPS):</strong> You need the *entire* webpage, not just
+                                bits and pieces.</li>
+                            <li><strong>File Transfers (FTP/SFTP):</strong> A corrupted file is a useless file. 100%
+                                integrity is required.</li>
+                            <li><strong>Email (SMTP/IMAP):</strong> You must receive the full, uncorrupted email message.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="udp-content" class="bg-white p-8 rounded-lg shadow-xl border border-gray-100 hidden">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">UDP (User Datagram Protocol)</h3>
+                <p class="text-gray-700 mb-6 text-lg">
+                    UDP is like sending a postcard. It's a "fire and forget," <strong>best-effort</strong> protocol.
+                    There's no connection, no tracking, and no guarantee of delivery. Its main advantage is its speed
+                    and tiny header (low overhead).
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Key Characteristics</h4>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700">
+                            <li><strong>Connectionless:</strong> It just sends the data (datagrams). No handshake.</li>
+                            <li><strong>Unreliable:</strong> No ACKs, no re-transmissions. If a packet is lost, it's
+                                gone forever. The application must handle any errors.</li>
+                            <li><strong>No Ordering:</strong> Packets can arrive in any order, or not at all.</li>
+                            <li><strong>Low Overhead:</strong> The UDP header is very small (8 bytes), making it fast and
+                                efficient.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Common Use Cases</h4>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700">
+                            <li><strong>Video/Audio Streaming (VoIP):</strong> In a video call, it's better to miss a
+                                tiny fraction of a second (a lost packet) than to have the whole stream pause to re-transmit old data.</li>
+                            <li><strong>Online Gaming:</strong> Your character's current position needs to be sent *now*.
+                                A packet from 2 seconds ago is useless.</li>
+                            <li><strong>DNS (Domain Name System):</strong> A small, fast query. If the request is lost,
+                                the computer simply asks again.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tcp-deep-dive" class="mb-24 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">TCP Deep Dive: Reliability Engineering</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
+                    TCP's reliability isn't magic. It's a set of brilliant rules and structures defined in its header.
+                    Let's explore how it works, starting with its blueprint.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100 mb-16">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Part 1: The TCP Header (Interactive)</h3>
+                <p class="text-gray-600 mb-6">
+                    The standard TCP header is 20 bytes long and contains all the information needed to manage a
+                    reliable, ordered, and flow-controlled connection. <strong>Click on any field below</strong> to
+                    see its description.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <div class="grid grid-cols-2 gap-1 text-center font-mono text-sm">
+                            <div class="header-field col-span-1 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="src-port">
+                                Source Port (16 bits)
+                            </div>
+                            <div class="header-field col-span-1 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="dest-port">
+                                Destination Port (16 bits)
+                            </div>
+                            <div class="header-field col-span-2 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="seq-num">
+                                Sequence Number (32 bits)
+                            </div>
+                            <div class="header-field col-span-2 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="ack-num">
+                                Acknowledgment Number (32 bits)
+                            </div>
+                            <div class="header-field bg-gray-100 border border-gray-300 p-2 rounded" data-field="do">
+                                DO (4)
+                            </div>
+                            <div class="header-field bg-gray-100 border border-gray-300 p-2 rounded" data-field="rsv">
+                                RSV (3)
+                            </div>
+                            <div class="header-field bg-gray-100 border border-gray-300 p-2 rounded" data-field="flags">
+                                Flags (9)
+                            </div>
+                            <div class="header-field bg-gray-100 border border-gray-300 p-2 rounded"
+                                data-field="window">
+                                Window Size (16 bits)
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1 text-center font-mono text-sm mt-1">
+                            <div class="header-field col-span-1 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="checksum">
+                                Checksum (16 bits)
+                            </div>
+                            <div class="header-field col-span-1 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="urgent">
+                                Urgent Pointer (16 bits)
+                            </div>
+                            <div class="header-field col-span-2 bg-gray-100 border border-gray-300 p-3 rounded"
+                                data-field="options">
+                                Options (if DO > 5)
+                            </div>
+                        </div>
+                    </div>
+                    <div id="header-details-panel"
+                        class="md:col-span-1 bg-blue-50 p-4 rounded-lg border border-blue-200 h-full min-h-[250px]">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-2" id="header-details-title">Select a
+                            field</h4>
+                        <p class="text-blue-900" id="header-details-text">Click one of the header fields to the left
+                            to learn about its function.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Part 2: The Window Scaling Problem (Interactive)
+                </h3>
+                <p class="text-gray-600 mb-6">
+                    The original `Window Size` field was 16 bits, allowing a maximum of 65,535 bytes of data to be
+                    sent before waiting for an ACK. On modern networks with high latency (like satellites), this is a
+                    performance bottleneck. We're simulating a 1Gbps (125,000,000 B/s) link.
+                    <strong>Adjust the network latency slider</strong> to see the impact on throughput.
+                </p>
+                <div class="mb-6">
+                    <label for="latency-slider" class="block text-sm font-medium text-gray-700">Network Latency
+                        (Round-Trip Time)</label>
+                    <div class="flex items-center space-x-4">
+                        <input id="latency-slider" type="range" min="1" max="500" value="100" class="w-full">
+                        <span id="latency-value" class="font-mono text-lg text-blue-600 w-24 text-right">100 ms</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="windowing-chart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="nat-pat" class="mb-24 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Network Address Translation (NAT/PAT)</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
+                    How do millions of private devices (like `192.168.1.100`) access the internet using one single
+                    public IP? The answer is Port Address Translation (PAT). Follow the steps to see how your router
+                    acts like a receptionist, keeping track of all conversations.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+                <div class="flex justify-center mb-6">
+                    <button id="nat-step-btn"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Start Simulation
+                    </button>
+                    <button id="nat-reset-btn"
+                        class="ml-4 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 hidden">
+                        Reset
+                    </button>
+                </div>
+
+                <div class="relative w-full max-w-4xl mx-auto" style="height: 300px;">
+                    <div class="sim-packet absolute bg-yellow-300 border border-yellow-600 rounded p-2 text-xs font-mono shadow-lg"
+                        id="nat-packet" style="top: 130px; left: 10%; visibility: hidden;">
+                        <div>Src: <span id="nat-src">192.168.1.100:50000</span></div>
+                        <div>Dest: <span id="nat-dest">1.2.3.4:443</span></div>
+                    </div>
+
+                    <div class="absolute text-center" style="left: 10%; top: 40px;">
+                        <span class="text-3xl">💻</span>
+                        <div class="font-bold">Your PC</div>
+                        <div class="text-sm text-gray-600">192.168.1.100</div>
+                    </div>
+                    <div class="absolute text-center" style="left: 45%; top: 40px;">
+                        <span class="text-3xl">🌐</span>
+                        <div class="font-bold">Router (Public: 4.4.4.4)</div>
+                        <div class="text-sm text-gray-600">NAT/PAT</div>
+                    </div>
+                    <div class="absolute text-center" style="right: 10%; top: 40px;">
+                        <span class="text-3xl">☁️</span>
+                        <div class="font-bold">Server</div>
+                        <div class="text-sm text-gray-600">1.2.3.4</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Simulation Log</h4>
+                        <div id="nat-log"
+                            class="bg-gray-100 p-4 rounded-lg border h-48 text-gray-700 overflow-y-auto">
+                            <p>Click "Start Simulation" to begin.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Router's NAT Table</h4>
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-2 border border-gray-300">Private (Inside)</th>
+                                    <th class="p-2 border border-gray-300">Public (Outside)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nat-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="traceroute" class="mb-32 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Mapping the Path: Traceroute</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
+                    How do you find the path your data takes? `traceroute` uses a clever trick with the `TTL`
+                    (Time-To-Live) field in the IP header. Select a TTL and send a probe to see how it works.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+                <div class="flex justify-center items-center space-x-4 mb-6">
+                    <label for="ttl-select" class="text-lg font-medium">Set Probe TTL:</label>
+                    <select id="ttl-select"
+                        class="block w-24 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                    <button id="traceroute-send-btn"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Send Probe
+                    </button>
+                </div>
+
+                <div class="relative w-full max-w-5xl mx-auto p-4" style="height: 150px;">
+                    <div class="sim-packet absolute bg-green-300 border border-green-600 rounded p-2 text-xs font-mono shadow-lg"
+                        id="traceroute-packet" style="top: 50px; left: 5%; visibility: hidden;">
+                        <div>Dest: 8.8.8.8</div>
+                        <div>TTL: <span id="traceroute-ttl-val">1</span></div>
+                    </div>
+
+                    <div class="flex justify-between items-center h-full">
+                        <div class="text-center">
+                            <span class="text-3xl">💻</span>
+                            <div class="font-bold">Your PC</div>
+                        </div>
+                        <div class="flex-grow h-1 bg-gray-300"></div>
+                        <div id="router-1" class="sim-router bg-gray-100 p-4 rounded-lg shadow text-center mx-4">
+                            <span class="text-3xl">📡</span>
+                            <div class="font-bold">Router 1</div>
+                            <div class="text-sm text-gray-600">192.168.1.1</div>
+                        </div>
+                        <div class="flex-grow h-1 bg-gray-300"></div>
+                        <div id="router-2" class="sim-router bg-gray-100 p-4 rounded-lg shadow text-center mx-4">
+                            <span class="text-3xl">📡</span>
+                            <div class="font-bold">Router 2</div>
+                            <div class="text-sm text-gray-600">10.1.1.1</div>
+                        </div>
+                        <div class="flex-grow h-1 bg-gray-300"></div>
+                        <div id="router-3" class="sim-router bg-gray-100 p-4 rounded-lg shadow text-center mx-4">
+                            <span class="text-3xl">☁️</span>
+                            <div class="font-bold">Server</div>
+                            <div class="text-sm text-gray-600">8.8.8.8</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Simulation Log</h4>
+                        <div id="traceroute-log"
+                            class="bg-gray-100 p-4 rounded-lg border h-48 text-gray-700 overflow-y-auto">
+                            <p>Select a TTL and click "Send Probe".</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-900 mb-2">Hops Discovered</h4>
+                        <ul id="traceroute-hops" class="list-disc list-outside pl-5 space-y-2 text-gray-700">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 py-8 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>An interactive exploration of networking concepts.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const headerDetails = {
+                'src-port': {
+                    title: 'Source Port (16 bits)',
+                    text: 'The port number on the sender\'s machine. This is usually a random, high number (e.g., 52142) assigned by the OS to identify the specific application that sent the data.'
+                },
+                'dest-port': {
+                    title: 'Destination Port (16 bits)',
+                    text: 'The port number on the receiver\'s machine that the sender wants to talk to. This is often a "well-known" port, like 443 for HTTPS or 80 for HTTP.'
+                },
+                'seq-num': {
+                    title: 'Sequence Number (32 bits)',
+                    text: 'This is the "page number" that tracks the bytes sent. It ensures that the receiver can re-assemble the data in the correct order and identify missing pieces.'
+                },
+                'ack-num': {
+                    title: 'Acknowledgment Number (32 bits)',
+                    text: 'This is how the receiver confirms it got the data. It contains the *next* sequence number the receiver expects to get, effectively acknowledging all prior bytes.'
+                },
+                'do': {
+                    title: 'Data Offset (4 bits)',
+                    text: 'Also known as Header Length. This field tells the receiver how long the TCP header is (in 32-bit words). This is how it knows where the header ends and the actual data (payload) begins.'
+                },
+                'rsv': {
+                    title: 'Reserved (3 bits)',
+                    text: 'These bits are reserved for future use and must be set to zero.'
+                },
+                'flags': {
+                    title: 'Flags (9 bits)',
+                    text: 'One-bit switches that manage the connection. Key flags include SYN (start connection), ACK (acknowledge), FIN (finish connection), and RST (reset connection).'
+                },
+                'window': {
+                    title: 'Window Size (16 bits)',
+                    text: 'The original flow control. This tells the sender how much buffer space (in bytes) the receiver has available. The sender cannot send more data than this window size.'
+                },
+                'checksum': {
+                    title: 'Checksum (16 bits)',
+                    text: 'A value used for error-checking. The sender calculates it, and the receiver re-calculates it. If they don\'t match, the packet is considered corrupt and is discarded.'
+                },
+                'urgent': {
+                    title: 'Urgent Pointer (16 bits)',
+                    text: 'Used with the URG flag to point to "urgent" data in the stream. This is very rarely used in modern networking.'
+                },
+                'options': {
+                    title: 'Options',
+                    text: 'This optional field allows for extra features not covered in the standard header. The most important option is "Window Scaling," which is critical for modern high-speed networks.'
+                }
+            };
+
+            const headerFields = document.querySelectorAll('.header-field');
+            const detailsTitle = document.getElementById('header-details-title');
+            const detailsText = document.getElementById('header-details-text');
+            let activeField = null;
+
+            headerFields.forEach(field => {
+                field.addEventListener('click', () => {
+                    if (activeField) {
+                        activeField.classList.remove('active');
+                    }
+                    field.classList.add('active');
+                    activeField = field;
+
+                    const fieldKey = field.getAttribute('data-field');
+                    if (headerDetails[fieldKey]) {
+                        detailsTitle.textContent = headerDetails[fieldKey].title;
+                        detailsText.textContent = headerDetails[fieldKey].text;
+                    }
+                });
+            });
+
+            const showTcpBtn = document.getElementById('show-tcp-btn');
+            const showUdpBtn = document.getElementById('show-udp-btn');
+            const tcpContent = document.getElementById('tcp-content');
+            const udpContent = document.getElementById('udp-content');
+
+            showTcpBtn.addEventListener('click', () => {
+                tcpContent.style.display = 'block';
+                udpContent.style.display = 'none';
+                showTcpBtn.classList.remove('bg-gray-200', 'text-gray-800');
+                showTcpBtn.classList.add('bg-blue-600', 'text-white');
+                showUdpBtn.classList.remove('bg-blue-600', 'text-white');
+                showUdpBtn.classList.add('bg-gray-200', 'text-gray-800');
+            });
+
+            showUdpBtn.addEventListener('click', () => {
+                tcpContent.style.display = 'none';
+                udpContent.style.display = 'block';
+                showUdpBtn.classList.remove('bg-gray-200', 'text-gray-800');
+                showUdpBtn.classList.add('bg-blue-600', 'text-white');
+                showTcpBtn.classList.remove('bg-blue-600', 'text-white');
+                showTcpBtn.classList.add('bg-gray-200', 'text-gray-800');
+            });
+
+            const latencySlider = document.getElementById('latency-slider');
+            const latencyValue = document.getElementById('latency-value');
+            const ctx = document.getElementById('windowing-chart').getContext('2d');
+            let windowingChart;
+
+            const calculateThroughput = (latencyMs) => {
+                const latencySec = latencyMs / 1000;
+                if (latencySec === 0) return { oldTp: 0, newTp: 0 };
+
+                const oldWindow = 65535; // 65,535 bytes
+                const oldThroughput = oldWindow / latencySec; 
+
+                const newWindow = 3737600; // 3.7MB (Example from doc: 29,200 * 2^7)
+                const newThroughput = newWindow / latencySec;
+
+                return {
+                    oldTp: (oldThroughput / 1024 / 1024).toFixed(2), // MB/s
+                    newTp: (newThroughput / 1024 / 1024).toFixed(2)  // MB/s
+                };
+            };
+
+            const initChart = () => {
+                const initialLatency = latencySlider.value;
+                latencyValue.textContent = `${initialLatency} ms`;
+                const initialData = calculateThroughput(initialLatency);
+
+                windowingChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Original 16-bit Window', 'With Window Scaling'],
+                        datasets: [{
+                            label: 'Max Throughput (MB/s)',
+                            data: [initialData.oldTp, initialData.newTp],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.6)',
+                                'rgba(54, 162, 235, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `${context.dataset.label}: ${context.raw} MB/s`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Throughput (Megabytes/sec)'
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            latencySlider.addEventListener('input', () => {
+                const latency = latencySlider.value;
+                latencyValue.textContent = `${latency} ms`;
+                const newData = calculateThroughput(latency);
+                
+                windowingChart.data.datasets[0].data = [newData.oldTp, newData.newTp];
+                windowingChart.update();
+            });
+
+            initChart();
+
+            const natStepBtn = document.getElementById('nat-step-btn');
+            const natResetBtn = document.getElementById('nat-reset-btn');
+            const natLog = document.getElementById('nat-log');
+            const natTableBody = document.getElementById('nat-table-body');
+            const natPacket = document.getElementById('nat-packet');
+            const natSrc = document.getElementById('nat-src');
+            const natDest = document.getElementById('nat-dest');
+            let natStep = 0;
+
+            const natSteps = [
+                { log: 'Step 1: Your PC (192.168.1.100) creates a packet to send to the server (1.2.3.4) from a random port (50000).', packetLeft: '10%', src: '192.168.1.100:50000', dest: '1.2.3.4:443' },
+                { log: 'Step 2: The packet moves from your PC to your router.', packetLeft: '45%', src: '192.168.1.100:50000', dest: '1.2.3.4:443' },
+                { log: 'Step 3: The router receives the packet. It creates a *new entry* in its NAT table, mapping your private IP/port to its public IP (4.4.4.4) and a new random port (60001).', table: true, packetLeft: '45%', src: '192.168.1.100:50000', dest: '1.2.3.4:443' },
+                { log: 'Step 4: The router *re-writes* the packet\'s source to be its own public IP and new port. The destination is unchanged.', packetLeft: '45%', src: '4.4.4.4:60001', dest: '1.2.3.4:443' },
+                { log: 'Step 5: The modified packet is sent across the internet to the server. The server thinks the request came from 4.4.4.4.', packetLeft: '80%', src: '4.4.4.4:60001', dest: '1.2.3.4:443' },
+                { log: 'Step 6: The server sends its reply. The destination is the address it *saw* the request come from: 4.4.4.4:60001.', packetLeft: '80%', src: '1.2.3.4:443', dest: '4.4.4.4:60001' },
+                { log: 'Step 7: The reply packet travels back to the router.', packetLeft: '45%', src: '1.2.3.4:443', dest: '4.4.4.4:60001' },
+                { log: 'Step 8: The router receives the reply. It checks its NAT table, finds the entry for port 60001, and sees it belongs to 192.168.1.100:50000.', packetLeft: '45%', src: '1.2.3.4:443', dest: '4.4.4.4:60001' },
+                { log: 'Step 9: The router *re-writes* the destination to be your PC\'s private IP and original port.', packetLeft: '45%', src: '1.2.3.4:443', dest: '192.168.1.100:50000' },
+                { log: 'Step 10: The router forwards the translated packet to your PC, which receives the reply successfully. The translation is complete.', packetLeft: '10%', src: '1.2.3.4:443', dest: '192.168.1.100:50000' }
+            ];
+
+            natStepBtn.addEventListener('click', () => {
+                if (natStep === 0) {
+                    natLog.innerHTML = '';
+                    natStepBtn.textContent = 'Next Step';
+                    natResetBtn.classList.remove('hidden');
+                    natPacket.style.visibility = 'visible';
+                }
+
+                if (natStep < natSteps.length) {
+                    const step = natSteps[natStep];
+                    natLog.innerHTML += `<p class="mb-1">${step.log}</p>`;
+                    natLog.scrollTop = natLog.scrollHeight;
+                    
+                    natPacket.style.left = step.packetLeft;
+                    natSrc.textContent = step.src;
+                    natDest.textContent = step.dest;
+
+                    if (step.table) {
+                        natTableBody.innerHTML = '<tr><td class="p-2 border border-gray-300 font-mono text-sm">192.168.1.100:50000</td><td class="p-2 border border-gray-300 font-mono text-sm">4.4.4.4:60001</td></tr>';
+                    }
+
+                    natStep++;
+                }
+
+                if (natStep === natSteps.length) {
+                    natStepBtn.textContent = 'Simulation Complete';
+                    natStepBtn.disabled = true;
+                }
+            });
+
+            natResetBtn.addEventListener('click', () => {
+                natStep = 0;
+                natStepBtn.textContent = 'Start Simulation';
+                natStepBtn.disabled = false;
+                natResetBtn.classList.add('hidden');
+                natPacket.style.visibility = 'hidden';
+                natLog.innerHTML = '<p>Click "Start Simulation" to begin.</p>';
+                natTableBody.innerHTML = '';
+            });
+
+            const ttlSelect = document.getElementById('ttl-select');
+            const tracerouteSendBtn = document.getElementById('traceroute-send-btn');
+            const tracerouteLog = document.getElementById('traceroute-log');
+            const tracerouteHops = document.getElementById('traceroute-hops');
+            const traceroutePacket = document.getElementById('traceroute-packet');
+            const tracerouteTtlVal = document.getElementById('traceroute-ttl-val');
+            const routers = {
+                1: document.getElementById('router-1'),
+                2: document.getElementById('router-2'),
+                3: document.getElementById('router-3')
+            };
+            let discoveredHops = {};
+
+            const logTraceroute = (msg) => {
+                tracerouteLog.innerHTML += `<p class="mb-1">${msg}</p>`;
+                tracerouteLog.scrollTop = tracerouteLog.scrollHeight;
+            };
+
+            const updateHopsList = () => {
+                tracerouteHops.innerHTML = '';
+                for (let i = 1; i <= Object.keys(discoveredHops).length; i++) {
+                    if (discoveredHops[i]) {
+                        tracerouteHops.innerHTML += `<li>Hop ${i}: ${discoveredHops[i]}</li>`;
+                    }
+                }
+            };
+
+            tracerouteSendBtn.addEventListener('click', () => {
+                const ttl = parseInt(ttlSelect.value);
+                tracerouteTtlVal.textContent = ttl;
+                traceroutePacket.style.visibility = 'visible';
+                traceroutePacket.style.left = '5%';
+                logTraceroute(`Sending probe with TTL = ${ttl} to 8.8.8.8...`);
+
+                tracerouteSendBtn.disabled = true;
+
+                const animateProbe = (hop) => {
+                    if (hop > ttl) return;
+
+                    const routerElement = routers[hop];
+                    const routerRect = routerElement.getBoundingClientRect();
+                    const packetRect = traceroutePacket.parentElement.getBoundingClientRect();
+                    const targetLeft = routerRect.left - packetRect.left + (routerRect.width / 2) - 30;
+
+                    traceroutePacket.style.left = `${targetLeft}px`;
+
+                    setTimeout(() => {
+                        if (hop === ttl && hop < 3) {
+                            routerElement.classList.add('sim-flash-red');
+                            logTraceroute(`TTL expired at Router ${hop} (${routerElement.querySelector('.text-sm').textContent}).`);
+                            logTraceroute(`ICMP "Time Exceeded" received from ${routerElement.querySelector('.text-sm').textContent}.`);
+                            discoveredHops[hop] = `${routerElement.querySelector('.font-bold').textContent} (${routerElement.querySelector('.text-sm').textContent})`;
+                            updateHopsList();
+                            setTimeout(() => routerElement.classList.remove('sim-flash-red'), 500);
+                        } else if (hop < ttl) {
+                            animateProbe(hop + 1);
+                        } else if (hop === 3) {
+                            routerElement.classList.add('sim-flash-green');
+                            logTraceroute(`Probe reached destination: 8.8.8.8`);
+                            logTraceroute(`ICMP "Destination Unreachable" (or "Echo Reply") received from ${routerElement.querySelector('.text-sm').textContent}.`);
+                            discoveredHops[hop] = `${routerElement.querySelector('.font-bold').textContent} (${routerElement.querySelector('.text-sm').textContent})`;
+                            updateHopsList();
+                            setTimeout(() => routerElement.classList.remove('sim-flash-green'), 500);
+                        }
+                        
+                        if (hop === ttl) {
+                            setTimeout(() => {
+                                traceroutePacket.style.visibility = 'hidden';
+                                traceroutePacket.style.left = '5%';
+                                tracerouteSendBtn.disabled = false;
+                            }, 1000);
+                        }
+                    }, 1000);
+                };
+
+                animateProbe(1);
+            });
+
+        });
+    </script>
+</body>
+
+</html>

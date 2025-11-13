@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Content Security Policy:
+      This is a client-side security measure.
+      'default-src 'self'': Only allows content from the document's own origin.
+      'script-src 'unsafe-inline'': Allows inline <script> tags. REQUIRED for a single-file app.
+      'style-src 'unsafe-inline'': Allows inline <style> tags. REQUIRED for a single-file app.
+      'object-src 'none'': Blocks plugins like Flash.
+      'frame-ancestors 'none'': Prevents clickjacking by disallowing embedding in an iframe.
+      True security from all attacks also requires server-side validation, but this is a strong
+      client-side start.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; object-src 'none'; frame-ancestors 'none';">
+    <title>Networking Course: Subnetting & DHCP</title>
+    <style>
+        /* --- Solarized Theme Definitions --- */
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            
+            --base03:  #002b36;
+            --base02:  #073642;
+            --base01:  #586e75;
+            --base00:  #657b83;
+            --base0:   #839496;
+            --base1:   #93a1a1;
+            --base2:   #eee8d5;
+            --base3:   #fdf6e3;
+            --yellow:  #b58900;
+            --orange:  #cb4b16;
+            --red:     #dc322f;
+            --magenta: #d33682;
+            --violet:  #6c71c4;
+            --blue:    #268bd2;
+            --cyan:    #2aa198;
+            --green:   #859900;
+        }
+
+        html.theme-light {
+            --bg: var(--base3);
+            --bg-alt: var(--base2);
+            --fg: var(--base00);
+            --fg-bold: var(--base01);
+            --fg-heading: var(--base02);
+            --border: var(--base2);
+            --accent: var(--blue);
+            --accent-hover: var(--violet);
+            --link: var(--blue);
+            --link-visited: var(--violet);
+            --code-bg: var(--base2);
+            --code-fg: var(--base00);
+            --pre-bg: var(--base2);
+            --pre-fg: var(--base00);
+            --shadow: rgba(0, 43, 54, 0.1);
+            --input-bg: var(--base2);
+            --input-fg: var(--base00);
+            --btn-bg: var(--base2);
+            --btn-fg: var(--base01);
+            --btn-hover-bg: #dcd7c4;
+        }
+
+        html.theme-dark {
+            --bg: var(--base03);
+            --bg-alt: var(--base02);
+            --fg: var(--base0);
+            --fg-bold: var(--base1);
+            --fg-heading: var(--base2);
+            --border: var(--base02);
+            --accent: var(--blue);
+            --accent-hover: var(--cyan);
+            --link: var(--blue);
+            --link-visited: var(--cyan);
+            --code-bg: var(--base02);
+            --code-fg: var(--base0);
+            --pre-bg: var(--base02);
+            --pre-fg: var(--base0);
+            --shadow: rgba(253, 246, 227, 0.1);
+            --input-bg: var(--base02);
+            --input-fg: var(--base0);
+            --btn-bg: var(--base02);
+            --btn-fg: var(--base1);
+            --btn-hover-bg: #0c4353;
+        }
+
+        /* --- Base Styles --- */
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- Header & Navigation --- */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: var(--bg-alt);
+            color: var(--fg-heading);
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px var(--shadow);
+            flex-wrap: wrap;
+        }
+
+        .app-header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: var(--fg-heading);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .header-controls .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .header-controls .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            background-color: var(--btn-bg);
+            color: var(--btn-fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .header-controls .btn-sm:hover {
+            background-color: var(--btn-hover-bg);
+        }
+
+        /* --- Theme Switch --- */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 24px;
+            position: relative;
+            width: 50px;
+            margin-left: 10px;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .slider {
+            background-color: var(--base01);
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            background-color: var(--base3);
+            bottom: 3px;
+            content: "";
+            height: 18px;
+            left: 3px;
+            position: absolute;
+            transition: .4s;
+            width: 18px;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--base1);
+        }
+        input:checked + .slider:before {
+            background-color: var(--base03);
+            transform: translateX(26px);
+        }
+
+        /* --- Main Navigation Tabs --- */
+        .app-nav {
+            display: flex;
+            background-color: var(--bg-alt);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px var(--shadow);
+            flex-wrap: wrap;
+            position: sticky; /* Make nav sticky */
+            top: 60px; /* Position below header (adjust if header height changes) */
+            z-index: 999; /* Below header, above content */
+        }
+
+        .nav-tab {
+            padding: 14px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            color: var(--fg);
+            font-size: 1rem;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .nav-tab:hover {
+            color: var(--accent-hover);
+        }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* --- Main Content --- */
+        .app-content {
+            padding-top: 20px;
+        }
+
+        .content-section {
+            display: none; /* Hidden by default */
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* --- Collapsible Sections --- */
+        details {
+            background-color: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px var(--shadow);
+            overflow: hidden; /* Prevent content bleed before animation */
+        }
+
+        details summary {
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--fg-heading);
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary:after {
+            content: '+';
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            transition: transform 0.2s;
+        }
+
+        details[open] summary:after {
+            transform: rotate(45deg);
+        }
+
+        .details-content {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        /* Adjust padding for exercise details */
+        #content-exercises details .details-content {
+             padding: 15px; /* Slightly less padding inside exercise details */
+        }
+         #content-exercises details {
+             background-color: var(--bg); /* Match inner background */
+         }
+
+
+        /* --- Content Typography & Elements --- */
+        h1, h2, h3, h4 {
+            color: var(--fg-heading);
+            font-weight: 600;
+            margin-top: 1.5em;
+        }
+
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.7rem; }
+        h3 { font-size: 1.4rem; }
+        h4 { font-size: 1.2rem; }
+
+        a {
+            color: var(--link);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        a:visited {
+            color: var(--link-visited);
+        }
+
+        p {
+            margin-bottom: 1.2em;
+        }
+
+        ul, ol {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 0.5em;
+        }
+
+        code {
+            background-color: var(--code-bg);
+            color: var(--code-fg);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        pre {
+            background-color: var(--pre-bg);
+            color: var(--pre-fg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5em;
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+        
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-alt);
+            color: var(--fg-bold);
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--bg-alt);
+        }
+
+        /* --- Interactive SVGs --- */
+        .svg-diagram {
+            display: block;
+            margin: 20px auto;
+            background-color: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .svg-diagram text {
+            fill: var(--fg);
+            font-family: var(--font-sans);
+            font-size: 12px;
+        }
+        .svg-diagram .label {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .svg-diagram .arrow-line {
+            stroke: var(--accent);
+            stroke-width: 2;
+        }
+        .svg-diagram .arrow-head {
+            fill: var(--accent);
+        }
+        .svg-diagram .box {
+            stroke: var(--fg-bold);
+            stroke-width: 1;
+            fill: var(--bg);
+        }
+        .svg-diagram .box-alt {
+            stroke: var(--fg-bold);
+            stroke-width: 1;
+            fill: var(--bg-alt);
+        }
+        .svg-diagram .subnet-block {
+            stroke: var(--cyan);
+            stroke-width: 2;
+            fill: var(--bg-alt);
+        }
+        .svg-diagram .subnet-text {
+            fill: var(--fg);
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        /* --- Exercises Section --- */
+        /* Remove styles for .exercise-item as it's now wrapped in details */
+        /* .exercise-item { ... } */
+        .exercise-item h4 { /* Style the h4 inside the details content */
+            margin-top: 0;
+        }
+        .answer-box {
+            width: 100%;
+            min-height: 150px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--input-fg);
+            box-sizing: border-box; /* Important for 100% width */
+        }
+        .answer-controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .btn-import {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            background-color: var(--btn-bg);
+            color: var(--btn-fg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-import:hover {
+             background-color: var(--btn-hover-bg);
+        }
+
+        /* --- Submit Section --- */
+        .submit-section {
+            border: 2px dashed var(--accent);
+            border-radius: 8px;
+            padding: 25px;
+            margin-top: 30px;
+            background-color: var(--bg-alt);
+        }
+        .submit-section h3 {
+            margin-top: 0;
+        }
+        .submit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--input-fg);
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .submit-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .btn-submit {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        .btn-submit:hover {
+            opacity: 0.85;
+        }
+        .btn-send {
+            background-color: var(--green);
+            color: var(--base3);
+        }
+        .btn-download {
+            background-color: var(--blue);
+            color: var(--base3);
+        }
+        .submit-instructions {
+            font-size: 0.9rem;
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        /* --- Password Modal --- */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 43, 54, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-box {
+            background-color: var(--bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+        .modal-box h3 {
+            margin-top: 0;
+            color: var(--fg-heading);
+        }
+        .modal-instructions {
+            font-size: 0.9rem;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .password-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        #password-input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            font-size: 1.1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--input-fg);
+            box-sizing: border-box;
+        }
+        #toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--fg);
+            font-size: 1.2rem;
+        }
+        #password-error {
+            color: var(--red);
+            font-weight: 500;
+            height: 1.2em;
+            margin-bottom: 15px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-modal {
+            padding: 10px 18px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+        }
+        .btn-cancel {
+            background-color: var(--btn-bg);
+            color: var(--btn-fg);
+        }
+        .btn-cancel:hover {
+            background-color: var(--btn-hover-bg);
+        }
+        .btn-unlock {
+            background-color: var(--accent);
+            color: var(--base3);
+            border-color: var(--accent);
+        }
+        .btn-unlock:hover {
+            opacity: 0.85;
+        }
+
+        /* --- Dynamic Header Height Adjustment --- */
+        :root {
+           --header-height: 60px; /* Default */
+        }
+        .app-nav {
+             top: var(--header-height);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- --- App Header --- -->
+    <header class="app-header" id="app-header"> <!-- Added ID -->
+        <h1>Networking Course: Subnetting & DHCP</h1>
+        <div class="header-controls">
+            <div class="btn-group">
+                <button id="btn-expand-all" class="btn-sm">Expand All</button>
+                <button id="btn-collapse-all" class="btn-sm">Collapse All</button>
+            </div>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="theme-checkbox">
+                    <input type="checkbox" id="theme-checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- --- Main Navigation --- -->
+    <nav class="app-nav">
+        <button class="nav-tab active" data-target="lecture">Lecture</button>
+        <button class="nav-tab" data-target="exercises">Exercises</button>
+        <button class="nav-tab" data-target="tips">Tips</button>
+        <button class="nav-tab" data-target="explanations">Explanations</button>
+        <button class="nav-tab" data-target="answers" id="nav-answers">Answers</button>
+        <button class="nav-tab" data-target="evaluation">Evaluation Grid</button>
+    </nav>
+
+    <!-- --- Main Content Area --- -->
+    <main class="container app-content">
+
+        <!-- ****************** -->
+        <!-- * LECTURE SECTION * -->
+        <!-- ****************** -->
+        <section id="content-lecture" class="content-section active">
+            <!-- Content from 01. What is Subnetting.docx -->
+            <details open>
+                <summary>What is Subnetting?</summary>
+                <div class="details-content">
+                    <p>Remember our class A, B and C networks?</p>
+                    <ul>
+                        <li><strong>Class A:</strong> 16,777,216 addresses in total.</li>
+                        <li><strong>Class B:</strong> 65,536 addresses in total.</li>
+                        <li><strong>Class C:</strong> 256 addresses in total.</li>
+                    </ul>
+                    <p>A <strong>subnet</strong> is a sub-network of a network that falls within the class A, B or C range.</p>
+                    <p>For example, <code>172.16.0.0/16</code> is a class B network. This network is pretty big; it starts with <code>172.16.0.0</code> and ends with <code>172.16.255.255</code>. Instead of one big network, we can use a smaller “portion”. An example is <code>172.16.1.0/24</code>. This subnet falls within the <code>172.16.0.0/16</code> class B network, so that’s why it is called a “sub”net.</p>
+                    
+                    <h4>Why use Subnetting?</h4>
+                    <p>Technically, using large default networks (like <code>/24</code>) for everything will work, but it's a poor choice for two main reasons:</p>
+                    <ol>
+                        <li><strong>Address Exhaustion:</strong> There’s a limited amount of private class C networks (<code>192.168.0.0/24</code> to <code>192.168.255.0/24</code>). If we have more than 256 sites, we run out.</li>
+                        <li><strong>Wasted Addresses:</strong> Links between routers are point-to-point and only need two IP addresses. Using a <code>/24</code> (254 usable IPs) for this wastes 252 addresses. This is a critical problem with public IP addresses, which are scarce.</li>
+                    </ol>
+                    <p>Subnetting allows us to create an efficient design, using subnet sizes that match the need.</p>
+
+                    <h4>Subnet Design Example</h4>
+                    <p>When designing a subnetting plan, you must know:</p>
+                    <ul>
+                        <li>How many VLANs (or subnets) are there? Each VLAN requires a different subnet.</li>
+                        <li>How many hosts do we have in each VLAN?</li>
+                        <li>What is the expected growth of this network?</li>
+                    </ul>
+
+                    <h4>Single Subnet Size (Simple Design)</h4>
+                    <p>If you are in an enterprise LAN using private IPs, you have plenty of space. It's often far more convenient to use the same subnet size (like <code>/24</code>) for all user VLANs, even if some are small. This simplifies management. You can then use very small subnets (like <code>/30</code>) for point-to-point router links to be efficient.</p>
+
+                    <h4>Multiple Subnet Sizes (Efficient Design)</h4>
+                    <p>If you use public IP addresses, you must be as efficient as possible. This is where you use <strong>VLSM (Variable Length Subnet Mask)</strong>. You calculate the smallest possible subnet for each requirement.</p>
+                    <ul>
+                        <li>A requirement for 200 servers needs a <code>/24</code> (254 hosts).</li>
+                        <li>A requirement for 60 servers needs a <code>/26</code> (62 hosts).</li>
+                        <li>A requirement for 20 servers needs a <code>/27</code> (30 hosts).</li>
+                        <li>A requirement for 2 servers (router link) needs a <code>/30</code> (2 hosts).</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- Content from 02. Basics of Binary Numbers.docx -->
+            <details>
+                <summary>Basics of Binary Numbers</summary>
+                <div class="details-content">
+                    <p>Before we start calculating subnets, let’s first check out some basics of binary calculations. In the binary system, we only work with 0 or 1.</p>
+                    <ul>
+                        <li><strong>0</strong> = Off</li>
+                        <li><strong>1</strong> = On</li>
+                    </ul>
+                    <p>We work with 8 bits (an octet). The bit on the far left is the <strong>most significant bit (MSB)</strong> and the one on the right is the <strong>least significant bit (LSB)</strong>.</p>
+                    
+                    <h4>Decimal to Binary</h4>
+                    <p>To convert a decimal number to binary, you start from the left (128) and see if the bit "fits".</p>
+                    <pre>Bit Value:   128  64  32  16   8   4   2   1</pre>
+                    <p><strong>Example: Decimal 178</strong></p>
+                    <ul>
+                        <li>Does 128 fit into 178? Yes. (178 - 128 = 50 left)</li>
+                        <li>Does 64 fit into 50? No.</li>
+                        <li>Does 32 fit into 50? Yes. (50 - 32 = 18 left)</li>
+                        <li>Does 16 fit into 18? Yes. (18 - 16 = 2 left)</li>
+                        <li>Does 8 fit into 2? No.</li>
+                        <li>Does 4 fit into 2? No.</li>
+                        <li>Does 2 fit into 2? Yes. (2 - 2 = 0 left)</li>
+                        <li>Does 1 fit into 0? No.</li>
+                    </ul>
+                    <pre>Binary:      1   0   1   1   0   0   1   0</pre>
+                    <p>So, 178 = <code>10110010</code>.</p>
+
+                    <h4>Binary to Decimal</h4>
+                    <p>To convert binary to decimal, just add up the values where you see a "1".</p>
+                    <p><strong>Example: Binary <code>10111110</code></strong></p>
+                    <pre>Bit Value:   128  64  32  16   8   4   2   1
+Binary:      1   0   1   1   1   1   1   0</pre>
+                    <p>Add them up: 128 + 32 + 16 + 8 + 4 + 2 = <strong>190</strong>.</p>
+                </div>
+            </details>
+
+            <!-- Content from 03. Subnetting in Binary.docx -->
+            <details>
+                <summary>Subnetting in Binary</summary>
+                <div class="details-content">
+                    <p>This lesson explains how subnetting works "under the hood" using binary. The subnet mask is what tells a device which part of the IP address is the network and which part is the host.</p>
+                    
+                    <pre>IP Address:  192.168.1.0     (11000000.10101000.00000001.00000000)
+Subnet Mask: 255.255.255.0   (11111111.11111111.11111111.00000000)
+Network Part (1s): ^^^^^^^^^^^^^^^^^^^^^^^^
+Host Part (0s):                                ^^^^^^^^
+</pre>
+                    
+                    <p>With 8 host bits, we can have 2<sup>8</sup> = 256 addresses. We lose two: one for the network address (all host bits 0) and one for the broadcast address (all host bits 1). This leaves 254 usable host IPs.</p>
+
+                    <h4>Creating 2 Subnets (Class C)</h4>
+                    <p>To create 2 subnets, we must "borrow" 1 bit from the host part and give it to the network part. We move the subnet mask one bit to the right.</p>
+                    
+                    <p><strong>Old Mask:</strong> <code>...11111111.00000000</code> (/24)</p>
+                    <p><strong>New Mask:</strong> <code>...11111111.10000000</code> (/25)</p>
+                    
+                    <p>This new mask in decimal is <code>255.255.255.128</code>. We now have 7 host bits (2<sup>7</sup> = 128 addresses per subnet).</p>
+
+                    <p><strong>Subnet #1: (Borrowed bit is 0)</strong></p>
+                    <ul>
+                        <li><strong>Network:</strong> <code>192.168.1.0 /25</code> (Host bits: 0000000)</li>
+                        <li><strong>Usable Range:</strong> <code>192.168.1.1</code> to <code>192.168.1.126</code></li>
+                        <li><strong>Broadcast:</strong> <code>192.168.1.127 /25</code> (Host bits: 1111111)</li>
+                    </ul>
+                    
+                    <p><strong>Subnet #2: (Borrowed bit is 1)</strong></p>
+                     <ul>
+                        <li><strong>Network:</strong> <code>192.168.1.128 /25</code> (Host bits: 0000000)</li>
+                        <li><strong>Usable Range:</strong> <code>192.168.1.129</code> to <code>192.168.1.254</code></li>
+                        <li><strong>Broadcast:</strong> <code>192.168.1.255 /25</code> (Host bits: 1111111)</li>
+                    </ul>
+
+                    <h4>Creating 4 Subnets (Class C)</h4>
+                    <p>To create 4 subnets, we must borrow 2 bits (since 2<sup>2</sup> = 4).</p>
+                    <p><strong>New Mask:</strong> <code>...11111111.11000000</code> (/26)</p>
+                    <p>This new mask is <code>255.255.255.192</code>. We have 6 host bits (2<sup>6</sup> = 64 addresses per subnet).</p>
+                    <ul>
+                        <li><strong>Subnet 1:</strong> <code>192.168.1.0 /26</code> (Range 0-63)</li>
+                        <li><strong>Subnet 2:</strong> <code>192.168.1.64 /26</code> (Range 64-127)</li>
+                        <li><strong>Subnet 3:</strong> <code>192.168.1.128 /26</code> (Range 128-191)</li>
+                        <li><strong>Subnet 4:</strong> <code>192.168.1.192 /26</code> (Range 192-255)</li>
+                    </ul>
+                    <p>This same logic applies to Class B and A networks, you just have more host bits to borrow from.</p>
+                </div>
+            </details>
+
+            <!-- Content from 04. Subnetting in Decimal (Fast Way).docx -->
+            <details>
+                <summary>Subnetting in Decimal (Fast Way)</summary>
+                <div class="details-content">
+                    <p>Calculating in binary is slow. We can do all subnetting just by working with decimal "blocks".</p>
+                    <p>Start with a <code>/24</code> network, which is a block of 256 addresses (0-255).</p>
+                    
+                    <svg class="svg-diagram" viewBox="0 0 300 100" preserveAspectRatio="xMidYMid meet">
+                        <rect class="subnet-block" x="10" y="10" width="280" height="80" rx="5"></rect>
+                        <text class="subnet-text" x="150" y="55">Block Size: 256</text>
+                    </svg>
+
+                    <h4>Example: Create 4 subnets from <code>192.168.1.0/24</code></h4>
+                    <p>To get 4 subnets, we chop our block of 256 into 4 pieces.</p>
+                    <p>256 / 4 = 64. Our new "block size" is 64.</p>
+
+                    <svg class="svg-diagram" viewBox="0 0 300 170" preserveAspectRatio="xMidYMid meet">
+                        <rect class="subnet-block" x="10" y="10" width="135" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="77.5" y="50">64</text>
+                        <rect class="subnet-block" x="155" y="10" width="135" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="222.5" y="50">64</text>
+                        <rect class="subnet-block" x="10" y="90" width="135" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="77.5" y="130">64</text>
+                        <rect class="subnet-block" x="155" y="90" width="135" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="222.5" y="130">64</text>
+                    </svg>
+
+                    <p>Now we just list our subnets by adding the block size:</p>
+                    <ul>
+                        <li><strong>Subnet 1:</strong> <code>192.168.1.0</code></li>
+                        <li><strong>Subnet 2:</strong> <code>192.168.1.64</code></li>
+                        <li><strong>Subnet 3:</strong> <code>192.168.1.128</code></li>
+                        <li><strong>Subnet 4:</strong> <code>192.168.1.192</code></li>
+                    </ul>
+
+                    <h4>How to find the new Subnet Mask?</h4>
+                    <p>Use this trick: <strong>256 - "block size" = new subnet mask octet</strong>.</p>
+                    <p>In our example: 256 - 64 = 192.
+                    <p>Our new subnet mask is <code>255.255.255.192</code> (which is a /26).</p>
+                    
+                    <h4>How to find the Broadcast Address?</h4>
+                    <p>The broadcast address is just the IP address right before the *next* network.</p>
+                    <ul>
+                        <li>Subnet 1 (<code>192.168.1.0</code>) ends at <code>192.168.1.63</code> (because Subnet 2 starts at .64).</li>
+                        <li>Subnet 2 (<code>192.168.1.64</code>) ends at <code>192.168.1.127</code> (because Subnet 3 starts at .128).</li>
+                        <li>...and so on. The last subnet always ends at <code>.255</code>.</li>
+                    </ul>
+
+                    <h4>How to find the Usable Host IPs?</h4>
+                    <p>The usable range is always the address right after the network ID and the address right before the broadcast.</p>
+                    <p><strong>For Subnet 2:</strong></p>
+                    <ul>
+                        <li><strong>Network:</strong> <code>192.168.1.64</code></li>
+                        <li><strong>First Host:</strong> <code>192.168.1.65</code></li>
+                        <li><strong>Last Host:</strong> <code>192.168.1.126</code></li>
+                        <li><strong>Broadcast:</strong> <code>192.168.1.127</code></li>
+                    </ul>
+
+                    <p>This "block size" method works for Class A and B, too. You just apply the math to the correct octet.</p>
+                    <p><strong>Class B Example:</strong> <code>172.16.0.0</code>, create 8 subnets.</p>
+                    <ul>
+                        <li>We are working in the <strong>third octet</strong>.</li>
+                        <li>Block size = 256 / 8 = 32.</li>
+                        <li>New mask = 256 - 32 = 224. Full mask is <code>255.255.224.0</code>.</li>
+                        <li><strong>Networks:</strong> <code>172.16.0.0</code>, <code>172.16.32.0</code>, <code>172.16.64.0</code>, ...</li>
+                        <li><strong>Broadcast for Subnet 1:</strong> <code>172.16.31.255</code> (right before <code>172.16.32.0</code>).</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- Content from 05. Classless InterDomain Routing (CIDR).docx -->
+            <details>
+                <summary>Classless InterDomain Routing (CIDR)</summary>
+                <div class="details-content">
+                    <p>Once, we only had "classful" networks (Class A, B, C) with fixed subnet masks:</p>
+                    <ul>
+                        <li><strong>Class A:</strong> <code>255.0.0.0</code> (/8)</li>
+                        <li><strong>Class B:</strong> <code>255.255.0.0</code> (/16)</li>
+                        <li><strong>Class C:</strong> <code>255.255.255.0</code> (/24)</li>
+                    </ul>
+                    <p>This was very wasteful. <strong>Classless InterDomain Routing (CIDR)</strong> was introduced to solve this. CIDR ignores the "class" of an address and lets us use any subnet mask we like. This is what enables VLSM and efficient subnetting.</p>
+                    <p>With CIDR, we use "slash notation" (e.g., <code>/24</code>) instead of writing out the full mask. The number represents the total number of bits used for the network part.</p>
+                    
+                    <h4>CIDR / Subnet Mask Table</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CIDR</th>
+                                <th>Subnet Mask</th>
+                                <th>CIDR</th>
+                                <th>Subnet Mask</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>/16</td>
+                                <td>255.255.0.0</td>
+                                <td>/24</td>
+                                <td>255.255.255.0</td>
+                            </tr>
+                            <tr>
+                                <td>/17</td>
+                                <td>255.255.128.0</td>
+                                <td>/25</td>
+                                <td>255.255.255.128</td>
+                            </tr>
+                            <tr>
+                                <td>/18</td>
+                                <td>255.255.192.0</td>
+                                <td>/26</td>
+                                <td>255.255.255.192</td>
+                            </tr>
+                            <tr>
+                                <td>/19</td>
+                                <td>255.255.224.0</td>
+                                <td>/27</td>
+                                <td>255.255.255.224</td>
+                            </tr>
+                            <tr>
+                                <td>/20</td>
+                                <td>255.255.240.0</td>
+                                <td>/28</td>
+                                <td>255.255.255.240</td>
+                            </tr>
+                            <tr>
+                                <td>/21</td>
+                                <td>255.255.248.0</td>
+                                <td>/29</td>
+                                <td>255.255.255.248</td>
+                            </tr>
+                            <tr>
+                                <td>/22</td>
+                                <td>255.255.252.0</td>
+                                <td>/30</td>
+                                <td>255.255.255.252</td>
+                            </tr>
+                            <tr>
+                                <td>/23</td>
+                                <td>255.255.254.0</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            <!-- Content from 06. Variable Length Subnet Mask (VLSM).docx -->
+            <details>
+                <summary>Variable Length Subnet Mask (VLSM)</summary>
+                <div class="details-content">
+                    <p>In the past, all subnets had to be the same size. This was inefficient. For example, if you needed 4 subnets, you would chop a <code>/24</code> into four <code>/26</code> subnets (64 addresses each). If one subnet only needed 2 hosts (a router link), you were still wasting 60 addresses.</p>
+                    <p><strong>Variable Length Subnet Mask (VLSM)</strong> allows us to use different subnet masks (different sizes) for different subnets within the same network. This is the most efficient way to design a network.</p>
+
+                    <h4>VLSM Example</h4>
+                    <p><strong>Requirement:</strong> Subnet <code>192.168.1.0/24</code> for:</p>
+                    <ul>
+                        <li>Subnet A: 44 hosts</li>
+                        <li>Subnet B: 24 hosts</li>
+                        <li>Subnet C: 12 hosts</li>
+                        <li>Subnet D: 2 hosts</li>
+                    </ul>
+                    
+                    <p><strong>Step 1: Find the block size for each.</strong></p>
+                    <ul>
+                        <li>44 hosts needs a block of <strong>64</strong> (a /26)</li>
+                        <li>24 hosts needs a block of <strong>32</strong> (a /27)</li>
+                        <li>12 hosts needs a block of <strong>16</strong> (a /28)</li>
+                        <li>2 hosts needs a block of <strong>4</strong> (a /30)</li>
+                    </ul>
+
+                    <p><strong>Step 2: Assign them, starting with the LARGEST block first.</strong> This is critical to prevent address space overlap.</p>
+                    <svg class="svg-diagram" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+                        <!-- Full 256 Block -->
+                        <rect class="box" x="5" y="5" width="390" height="190" rx="5"></rect>
+                        <text x="10" y="20">192.168.1.0/24 (Full Block)</text>
+
+                        <!-- Subnet A (64) -->
+                        <rect class="subnet-block" x="10" y="30" width="190" height="80" rx="5"></rect>
+                        <text class="subnet-text" x="105" y="75">A: 64</text>
+                        <text x="12" y="45">.0</text>
+                        
+                        <!-- Subnet B (32) -->
+                        <rect class="subnet-block" x="10" y="115" width="90" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="55" y="155">B: 32</text>
+                        <text x="12" y="130">.64</text>
+
+                        <!-- Subnet C (16) -->
+                        <rect class="subnet-block" x="105" y="115" width="70" height="70" rx="5"></rect>
+                        <text class="subnet-text" x="140" y="155">C: 16</text>
+                        <text x="107" y="130">.96</text>
+                        
+                        <!-- Subnet D (4) -->
+                        <rect class="subnet-block" x="180" y="115" width="30" height="30" rx="5"></rect>
+                        <text class="subnet-text" x="195" y="137" style="font-size:12px;">D: 4</text>
+                        <text x="182" y="127" style="font-size:10px;">.112</text>
+                        
+                        <!-- Free Space -->
+                        <rect class="box-alt" x="205" y="30" width="185" height="160" rx="5"></rect>
+                        <text class="subnet-text" x="297.5" y="115">Free Space</text>
+                        <text x="207" y="45">.116</text>
+                    </svg>
+                    
+                    <p><strong>Step 3: List the network details.</strong></p>
+                    <ul>
+                        <li><strong>Subnet A (Size 64):</strong>
+                            <ul>
+                                <li>Network: <code>192.168.1.0</code></li>
+                                <li>Mask: 256 - 64 = 192 -> <code>255.255.255.192</code> (/26)</li>
+                                <li>Broadcast: <code>192.168.1.63</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Subnet B (Size 32):</strong>
+                            <ul>
+                                <li>Network: <code>192.168.1.64</code></li>
+                                <li>Mask: 256 - 32 = 224 -> <code>255.255.255.224</code> (/27)</li>
+                                <li>Broadcast: <code>192.168.1.95</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Subnet C (Size 16):</strong>
+                            <ul>
+                                <li>Network: <code>192.168.1.96</code></li>
+                                <li>Mask: 256 - 16 = 240 -> <code>255.255.255.240</code> (/28)</li>
+                                <li>Broadcast: <code>192.168.1.111</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Subnet D (Size 4):</strong>
+                            <ul>
+                                <li>Network: <code>192.168.1.112</code></li>
+                                <li>Mask: 256 - 4 = 252 -> <code>255.255.255.252</code> (/30)</li>
+                                <li>Broadcast: <code>192.168.1.115</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>Free Space:</strong> Starts at <code>192.168.1.116</code></li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- Content from 07. Router Summarization.docx -->
+            <details>
+                <summary>Route Summarization</summary>
+                <div class="details-content">
+                    <p>Route summarization (or aggregation) is the opposite of subnetting. We take multiple smaller networks and advertise them as one single, larger network. This is essential for keeping routing tables on the internet small and manageable.</p>
+
+                    <h4>Example: Summarize 4 networks</h4>
+                    <p>We have:
+                    <code>192.168.0.0/24</code>,
+                    <code>192.168.1.0/24</code>,
+                    <code>192.168.2.0/24</code>,
+                    <code>192.168.3.0/24</code>
+                    </p>
+
+                    <p><strong>Method 1: Binary</strong></p>
+                    <p>Look at the third octet in binary:</p>
+                    <pre>
+0 = 00000000
+1 = 00000001
+2 = 00000010
+3 = 00000011
+    ^^^^^^
+</pre>
+                    <p>The first 6 bits are the same for all networks. The original <code>/24</code> networks already matched on the first two octets (16 bits). So, the total number of matching bits is 16 (from 192.168) + 6 (from the third octet) = 22 bits.</p>
+                    <p>The summary route is the first network address (<code>192.168.0.0</code>) with the new CIDR prefix: <strong><code>192.168.0.0 /22</code></strong>.</p>
+                    <p>The mask for /22 is <code>255.255.252.0</code>.</p>
+
+                    <p><strong>Method 2: Decimal (Fast Way)</strong></p>
+                    <p>We are summarizing <strong>4</strong> networks. Use this formula:</p>
+                    <p><strong>256 - (number of networks) = summary subnet mask</strong></p>
+                    <p>256 - 4 = 252.</p>
+                    <p>The new mask is <code>255.255.252.0</code>. The network address is the first network in the list, <code>192.168.0.0</code>.
+                    <p>This summary (<code>192.168.0.0/22</code>) covers the entire range from <code>192.168.0.0</code> to <code>192.168.3.255</code>.</p>
+                </div>
+            </details>
+            
+            <!-- Content from 08. Hexadecimal to Decimal and Binary.docx -->
+            <details>
+                <summary>Hexadecimal to Decimal and Binary</summary>
+                <div class="details-content">
+                    <p>In networking, we use hexadecimal for MAC addresses and IPv6 addresses. The hexadecimal system counts from 0 to F.</p>
+                    
+                    <table>
+                        <thead><tr><th>Decimal</th><th>Hex</th><th>Decimal</th><th>Hex</th></tr></thead>
+                        <tbody>
+                            <tr><td>0</td><td>0</td><td>8</td><td>8</td></tr>
+                            <tr><td>1</td><td>1</td><td>9</td><td>9</td></tr>
+                            <tr><td>2</td><td>2</td><td>10</td><td>A</td></tr>
+                            <tr><td>3</td><td>3</td><td>11</td><td>B</td></tr>
+                            <tr><td>4</td><td>4</td><td>12</td><td>C</td></tr>
+                            <tr><td>5</td><td>5</td><td>13</td><td>D</td></tr>
+                            <tr><td>6</td><td>6</td><td>14</td><td>E</td></tr>
+                            <tr><td>7</td><td>7</td><td>15</td><td>F</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Binary to Hexadecimal</h4>
+                    <p>To convert from binary to hex, you cut the 8 bits into two parts of 4 bits (called a <strong>nibble</strong>).</p>
+                    <p><strong>Example: Decimal 206</strong></p>
+                    <p>In binary, 206 is <code>11001110</code>. (128 + 64 + 8 + 4 + 2)</p>
+                    <p>Now, split the nibbles:</p>
+                    <pre>
+First Nibble: 1100
+Second Nibble: 1110
+</pre>
+                    <p>Convert each 4-bit nibble to decimal. (The bits are 8, 4, 2, 1):</p>
+                    <ul>
+                        <li><strong>First Nibble (1100):</strong> 8 + 4 = 12. In hex, 12 is <strong>C</strong>.</li>
+                        <li><strong>Second Nibble (1110):</strong> 8 + 4 + 2 = 14. In hex, 14 is <strong>E</strong>.</li>
+                    </ul>
+                    <p>So, <code>11001110</code> = <strong>CE</strong>. You will often see this written as <code>0xCE</code>.</p>
+
+                    <h4>Hexadecimal to Binary</h4>
+                    <p>Just do the reverse. Convert each hex character to its 4-bit binary value.</p>
+                    <p><strong>Example: 0x76</strong></p>
+                    <ul>
+                        <li><strong>7:</strong> 0 + 4 + 2 + 1 = <code>0111</code></li>
+                        <li><strong>6:</strong> 0 + 4 + 2 + 0 = <code>0110</code></li>
+                    </ul>
+                    <p>Combine them: <code>01110110</code>. (In decimal, this is 64 + 32 + 16 + 4 + 2 = 118).</p>
+                </div>
+            </details>
+
+            <!-- Content from 09. Create a Subnetting Cheat Sheet.docx -->
+            <details>
+                <summary>Create a Subnetting Cheat Sheet</summary>
+                <div class="details-content">
+                    <p>This is a fast way to build a cheat sheet for an exam. The two key tricks are:</p>
+                    <ol>
+                        <li><strong>Subnet Size:</strong> <code>256 - subnet mask octet = size of subnet</code>
+                            <ul><li>Example: Mask <code>.192</code> -> 256 - 192 = 64. The block size is 64.</li></ul>
+                        </li>
+                        <li><strong>Wildcard Mask:</strong> <code>size of subnet - 1 = wildcard octet</code>
+                            <ul><li>Example: Size 64 -> 64 - 1 = 63. The wildcard is <code>.63</code>.</li></ul>
+                        </li>
+                    </ol>
+
+                    <h4>CIDR Cheat Sheet (/24 to /30)</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CIDR</th>
+                                <th>Subnet Mask</th>
+                                <th>Subnet Size</th>
+                                <th>Usable Hosts</th>
+                                <th>Wildcard Mask</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>/24</td>
+                                <td>255.255.255.0</td>
+                                <td>256</td>
+                                <td>254</td>
+                                <td>0.0.0.255</td>
+                            </tr>
+                            <tr>
+                                <td>/25</td>
+                                <td>255.255.255.128</td>
+                                <td>128</td>
+                                <td>126</td>
+                                <td>0.0.0.127</td>
+                            </tr>
+                            <tr>
+                                <td>/26</td>
+                                <td>255.255.255.192</td>
+                                <td>64</td>
+                                <td>62</td>
+                                <td>0.0.0.63</td>
+                            </tr>
+                            <tr>
+                                <td>/27</td>
+                                <td>255.255.255.224</td>
+                                <td>32</td>
+                                <td>30</td>
+                                <td>0.0.0.31</td>
+                            </tr>
+                            <tr>
+                                <td>/28</td>
+                                <td>255.255.255.240</td>
+                                <td>16</td>
+                                <td>14</td>
+                                <td>0.0.0.15</td>
+                            </tr>
+                            <tr>
+                                <td>/29</td>
+                                <td>255.255.255.248</td>
+                                <td>8</td>
+                                <td>6</td>
+                                <td>0.0.0.7</td>
+                            </tr>
+                            <tr>
+                                <td>/30</td>
+                                <td>255.255.255.252</td>
+                                <td>4</td>
+                                <td>2</td>
+                                <td>0.0.0.3</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>This can be extended for <code>/16</code> to <code>/23</code> (working in the 3rd octet) and <code>/8</code> to <code>/15</code> (working in the 2nd octet).</p>
+                </div>
+            </details>
+
+            <!-- Content from 01. Introduction to DHCP.docx -->
+            <details>
+                <summary>Introduction to DHCP</summary>
+                <div class="details-content">
+                    <p>IP addresses can be configured <strong>statically</strong> (manually) or <strong>dynamically</strong>. We use static IPs for servers, routers, and printers. We use dynamic IPs for user devices like laptops and smartphones.</p>
+                    <p><strong>DHCP (Dynamic Host Configuration Protocol)</strong> is the protocol used to assign IP addresses automatically. This process is often called <strong>DORA</strong>.</p>
+
+                    <svg class="svg-diagram" viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet">
+                        <!-- Client -->
+                        <rect class="box" x="20" y="75" width="100" height="50" rx="5"></rect>
+                        <text class="label" x="70" y="102" text-anchor="middle">H1 (Client)</text>
+                        <text x="70" y="120" text-anchor="middle">(0.0.0.0)</text>
+                        
+                        <!-- Server -->
+                        <rect class="box" x="380" y="75" width="100" height="50" rx="5"></rect>
+                        <text class="label" x="430" y="102" text-anchor="middle">DHCP Server</text>
+                        <text x="430" y="120" text-anchor="middle">(192.168.1.254)</text>
+
+                        <!-- Discover -->
+                        <path class="arrow-line" d="M 125 85 h 250" marker-end="url(#arrowhead)"></path>
+                        <text x="250" y="80" text-anchor="middle" fill="var(--orange)" font-weight="bold">1. DHCP Discover (Broadcast)</text>
+                        
+                        <!-- Offer -->
+                        <path class="arrow-line" d="M 375 105 h -250" marker-end="url(#arrowhead-left)"></path>
+                        <text x="250" y="120" text-anchor="middle" fill="var(--green)" font-weight="bold">2. DHCP Offer (Broadcast)</text>
+                        
+                        <!-- Request -->
+                        <path class="arrow-line" d="M 125 140 h 250" marker-end="url(#arrowhead)"></path>
+                        <text x="250" y="155" text-anchor="middle" fill="var(--orange)" font-weight="bold">3. DHCP Request (Broadcast)</text>
+                        
+                        <!-- ACK -->
+                        <path class="arrow-line" d="M 375 160 h -250" marker-end="url(#arrowhead-left)"></path>
+                        <text x="250" y="175" text-anchor="middle" fill="var(--green)" font-weight="bold">4. DHCP ACK (Broadcast)</text>
+
+                        <!-- Arrowhead Definitions -->
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                                <polygon class="arrow-head" points="0 0, 10 3.5, 0 7" />
+                            </marker>
+                            <marker id="arrowhead-left" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                <polygon class="arrow-head" points="10 0, 0 3.5, 10 7" />
+                            </marker>
+                        </defs>
+                    </svg>
+
+                    <ol>
+                        <li><strong>Discover:</strong> The client (with IP <code>0.0.0.0</code>) sends a <strong>broadcast</strong> message to destination <code>255.255.255.255</code>, asking "Are there any DHCP servers out there?"</li>
+                        <li><strong>Offer:</strong> Any DHCP server that hears the discover message responds with an "offer". This message (also a broadcast) says, "I'm a DHCP server, and you can have IP address <code>192.168.1.1</code>." It can also include the subnet mask, default gateway, and DNS servers.</li>
+                        <li><strong>Request:</strong> The client receives one or more offers. It picks one (usually the first one) and sends a <strong>broadcast</strong> message saying, "I would like to accept the offer for <code>192.168.1.1</code> from the server at <code>192.168.1.254</code>." It's a broadcast so all other DHCP servers know their offers were declined.</li>
+                        <li><strong>Acknowledge (ACK):</strong> The DHCP server that was chosen sends a final <strong>broadcast</strong> message saying, "OK, that IP address <code>192.168.1.1</code> is officially yours for a set 'lease time'." The client can now use this IP address.</li>
+                    </ol>
+                    <p>DHCP uses UDP. The client sends from port 68 to the server's port 67.</p>
+                </div>
+            </details>
+            
+            <details>
+                <summary>Important Hyperlinks</summary>
+                <div class="details-content">
+                    <p>For further reading on these standard protocols, you can visit the official IETF (Internet Engineering Task Force) RFC (Request for Comments) pages or other educational resources.</p>
+                    <ul>
+                        <li>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc2131" target="_blank" rel="noopener noreferrer">RFC 2131: Dynamic Host Configuration Protocol (DHCP)</a>
+                        </li>
+                        <li>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc4632" target="_blank" rel="noopener noreferrer">RFC 4632: Classless Inter-Domain Routing (CIDR)</a>
+                        </li>
+                        <li>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc1878" target="_blank" rel="noopener noreferrer">RFC 1878: Variable Length Subnet Mask (VLSM)</a> (Note: This is an older informational RFC, superseded by CIDR)
+                        </li>
+                         <li>
+                            <a href="https://en.wikipedia.org/wiki/Subnetwork" target="_blank" rel="noopener noreferrer">Wikipedia: Subnetwork</a>
+                        </li>
+                    </ul>
+                    <!-- Disclaimer paragraph removed as requested -->
+                </div>
+            </details>
+        </section>
+
+        <!-- ********************* -->
+        <!-- * EXERCISES SECTION * -->
+        <!-- ********************* -->
+        <section id="content-exercises" class="content-section">
+            
+            <details> <!-- Exercise 1 Wrapped -->
+                 <summary>Exercise 1: Binary & Decimal Conversion</summary>
+                 <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p><strong>A)</strong> Convert the decimal number <strong>198</strong> to 8-bit binary.</p>
+                    <p><strong>B)</strong> Convert the binary number <strong><code>10101101</code></strong> to decimal.</p>
+                    <textarea class="answer-box" id="ex1-answer" data-question="Exercise 1: Binary & Decimal Conversion"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex1-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex1-answer">Import Content</button>
+                    </div>
+                 </div>
+            </details>
+
+            <details> <!-- Exercise 2 Wrapped -->
+                <summary>Exercise 2: Basic Subnetting (Decimal Method)</summary>
+                <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p>You are given the network <strong><code>192.168.10.0/24</code></strong>. You need to create <strong>4 subnets</strong> of equal size. For each of the 4 new subnets, list:</p>
+                    <ol>
+                        <li>Network Address</li>
+                        <li>Subnet Mask (in /CIDR and decimal notation)</li>
+                        <li>First Usable Host IP</li>
+                        <li>Last Usable Host IP</li>
+                        <li>Broadcast Address</li>
+                    </ol>
+                    <textarea class="answer-box" id="ex2-answer" data-question="Exercise 2: Basic Subnetting (Decimal Method)"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex2-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex2-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+
+             <details> <!-- Exercise 3 Wrapped -->
+                <summary>Exercise 3: CIDR and Host Calculation</summary>
+                <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p><strong>A)</strong> What is the full decimal subnet mask for a <strong><code>/27</code></strong> network?</p>
+                    <p><strong>B)</strong> How many <strong>total addresses</strong> are in a <code>/27</code> subnet?</p>
+                    <p><strong>C)</strong> How many <strong>usable host addresses</strong> are in a <code>/27</code> subnet?</p>
+                    <textarea class="answer-box" id="ex3-answer" data-question="Exercise 3: CIDR and Host Calculation"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex3-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex3-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+            
+            <details> <!-- Exercise 4 Wrapped -->
+                <summary>Exercise 4: Variable Length Subnet Mask (VLSM)</summary>
+                <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p>You are given the network <strong><code>10.20.0.0/16</code></strong>. Design a VLSM plan to meet the following requirements. List the network address, subnet mask, and usable IP range for each, starting with the largest.</p>
+                    <ul>
+                        <li>Dept A: 500 hosts</li>
+                        <li>Dept B: 200 hosts</li>
+                        <li>Dept C: 30 hosts</li>
+                        <li>Link D: 2 hosts (router link)</li>
+                    </ul>
+                    <textarea class="answer-box" id="ex4-answer" data-question="Exercise 4: Variable Length Subnet Mask (VLSM)"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex4-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex4-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+            
+            <details> <!-- Exercise 5 Wrapped -->
+                <summary>Exercise 5: Route Summarization</summary>
+                 <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p>What is the most efficient summary route (network address and CIDR mask) that covers all of the following networks?</p>
+                    <ul>
+                        <li><code>172.16.4.0/24</code></li>
+                        <li><code>172.16.5.0/24</code></li>
+                        <li><code>172.16.6.0/24</code></li>
+                        <li><code>172.16.7.0/24</code></li>
+                    </ul>
+                    <textarea class="answer-box" id="ex5-answer" data-question="Exercise 5: Route Summarization"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex5-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex5-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+            
+            <details> <!-- Exercise 6 Wrapped -->
+                <summary>Exercise 6: Hexadecimal</summary>
+                 <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p><strong>A)</strong> Convert the Hex value <strong><code>0xAF</code></strong> to 8-bit binary and to decimal.</p>
+                    <p><strong>B)</strong> Convert the binary value <strong><code>11010011</code></strong> to Hex.</p>
+                    <textarea class="answer-box" id="ex6-answer" data-question="Exercise 6: Hexadecimal"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex6-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex6-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+            
+            <details> <!-- Exercise 7 Wrapped -->
+                <summary>Exercise 7: DHCP</summary>
+                <div class="details-content exercise-item">
+                    <!-- Removed h4 -->
+                    <p><strong>A)</strong> What are the four steps of the DHCP process, in order? (You can use the DORA acronym).</p>
+                    <p><strong>B)</strong> Why is the DHCP Discover message a broadcast? And why is the DHCP Offer *also* a broadcast?</p>
+                    <textarea class="answer-box" id="ex7-answer" data-question="Exercise 7: DHCP"></textarea>
+                    <div class="answer-controls">
+                        <input type="file" class="file-input-hidden" data-target="ex7-answer" style="display: none;">
+                        <button class="btn-import" data-target="ex7-answer">Import Content</button>
+                    </div>
+                </div>
+            </details>
+
+            <!-- --- Submit Your Work Section --- -->
+            <div class="submit-section">
+                <h3>Submit Your Work</h3>
+                <div class="submit-grid">
+                    <div class="input-group">
+                        <label for="student-name">Your Name:</label>
+                        <input type="text" id="student-name" placeholder="John Doe">
+                    </div>
+                    <div class="input-group">
+                        <label for="student-id">Student ID:</label>
+                        <input type="text" id="student-id" placeholder="1234567">
+                    </div>
+                </div>
+                <div class="submit-actions">
+                    <button class="btn-submit btn-send" id="btn-send-email">Send Answers via Email</button>
+                    <button class="btn-submit btn-download" id="btn-download-answers">Copy & Download Answers (.txt)</button>
+                </div>
+                <div class="submit-instructions">
+                    <p><strong>How to use:</strong></p>
+                    <ol>
+                        <li>Fill in your Name and Student ID above.</li>
+                        <li><strong>Send Answers:</strong> Click this to open your local email client (like Outlook or Apple Mail) with an email pre-filled with your answers. Just click send!</li>
+                        <li><strong>Download Answers:</strong> Click this to save a <code>copied_content.txt</code> file to your computer. You can then upload this file or email it manually.</li>
+                    </ol>
+                    <p><strong>If "Send Answers" doesn't work:</strong> Your browser might be blocking <code>mailto:</code> links. Please use the "Download Answers" button and manually attach the downloaded file to an email addressed to <strong>asengroa@hotmail.com</strong>.</p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- *************** -->
+        <!-- * TIPS SECTION * -->
+        <!-- *************** -->
+        <section id="content-tips" class="content-section">
+            <details open>
+                <summary>Tips for Exercises</summary>
+                <div class="details-content">
+                    <p><strong>Exercise 1 (Binary):</strong> For decimal to binary, write down the 8 bit values (128, 64, 32...) and subtract the largest value you can, just like in the lecture example. For binary to decimal, just add up the bit values that have a '1'.</p>
+                    
+                    <p><strong>Exercise 2 (Subnetting):</strong> You need 4 subnets. How many bits do you need to borrow to get 4 subnets? (Hint: 2<sup>?</sup> = 4). Once you know the number of bits, you can find the new mask. Then, use the "fast decimal" method to find the "block size" (256 / 4). Your networks will be <code>.0</code>, <code>.64</code>, etc.</p>
+                    
+                    <p><strong>Exercise 3 (CIDR):</strong> A <code>/24</code> mask is <code>255.255.255.0</code>. A <code>/27</code> mask borrows 3 extra bits (27 - 24 = 3). What is the value of those 3 bits (128 + 64 + 32)? The total addresses is 2<sup>(number of host bits)</sup>. Host bits = 32 - 27.</p>
+                    
+                    <p><strong>Exercise 4 (VLSM):</strong> Always start with the largest requirement first! Find the block size for 500 hosts (2<sup>?</sup> >= 500). 2<sup>8</sup>=256 (too small), 2<sup>9</sup>=512 (just right). So you need 9 host bits, which is a <code>/23</code> mask (32 - 9 = 23). Assign <code>10.20.0.0/23</code>. Your next available address is <code>10.20.2.0</code>. Now, fit the 200-host requirement there.</p>
+                    
+                    <p><strong>Exercise 5 (Summarization):</strong> Look at the 3rd octet: 4, 5, 6, and 7. Write them in binary. Find all the bits that *match* from the left.
+                        <br><code>4 = 00000100</code>
+                        <br><code>5 = 00000101</code>
+                        <br><code>6 = 00000110</code>
+                        <br><code>7 = 00000111</code>
+                        <br>The first 6 bits (<code>000001</code>) match. The original networks were <code>/24</code>. The new summary mask will be 16 (for 172.16) + 6 matching bits = <code>/22</code>.
+                    </p>
+
+                    <p><strong>Exercise 6 (Hex):</strong> Remember that one hex character = 4 binary bits (a nibble). For <code>0xAF</code>, convert 'A' (10) to binary (<code>1010</code>) and 'F' (15) to binary (<code>1111</code>). Combine them.</p>
+                    
+                    <p><strong>Exercise 7 (DHCP):</strong> The Discover message *must* be a broadcast because the client has no IP and doesn't know where the server is. The Offer is also a broadcast because the client *still* has no IP address to receive a unicast message.</p>
+                </div>
+            </details>
+        </section>
+
+        <!-- ********************** -->
+        <!-- * EXPLANATIONS SECTION * -->
+        <!-- ********************** -->
+        <section id="content-explanations" class="content-section">
+            <details open>
+                <summary>Explanations of Concepts</summary>
+                <div class="details-content">
+                    <p><strong>Exercise 1:</strong> This is the fundamental skill. 198 = 128 + 64 + 0 + 0 + 0 + 4 + 2 + 0 = <code>11000110</code>. For <code>10101101</code>, you add 128 + 0 + 32 + 0 + 8 + 4 + 0 + 1 = 173.</p>
+
+                    <p><strong>Exercise 2:</strong> To get 4 subnets from a /24, you need 2 extra bits (2<sup>2</sup> = 4). The new mask is /26. Using the decimal method: The total block of 256 is divided by 4, giving a new block size of 64. The networks are <code>.0</code>, <code>.64</code>, <code>.128</code>, and <code>.192</code>. The broadcast for the <code>.64</code> network is <code>.127</code> (one less than the next network, <code>.128</code>).</p>
+                    
+                    <p><strong>Exercise 3:</strong> A <code>/27</code> mask leaves 5 host bits (32 - 27 = 5).
+                    <br>A) The mask is <code>11111111.11111111.11111111.11100000</code>. The last octet is 128+64+32 = 224. So, <code>255.255.255.224</code>.
+                    <br>B) Total addresses = 2<sup>(host bits)</sup> = 2<sup>5</sup> = 32.
+                    <br>C) Usable hosts = Total addresses - 2 (network and broadcast) = 32 - 2 = 30.
+                    </p>
+                    
+                    <p><strong>Exercise 4:</strong>
+                    <br>1. <strong>Dept A (500 hosts):</strong> Needs 512 addresses (2<sup>9</sup>). Mask is <code>/23</code> (32-9=23).
+                    <br> &nbsp; &nbsp; Network: <code>10.20.0.0/23</code> (Range 10.20.0.0 - 10.20.1.255)
+                    <br>2. <strong>Dept B (200 hosts):</strong> Needs 256 addresses (2<sup>8</sup>). Mask is <code>/24</code> (32-8=24).
+                    <br> &nbsp; &nbsp; Next available network: <code>10.20.2.0/24</code> (Range 10.20.2.0 - 10.20.2.255)
+                    <br>3. <strong>Dept C (30 hosts):</strong> Needs 32 addresses (2<sup>5</sup>). Mask is <code>/27</code> (32-5=27).
+                    <br> &nbsp; &nbsp; Next available network: <code>10.20.3.0/27</code> (Range 10.20.3.0 - 10.20.3.31)
+                    <br>4. <strong>Link D (2 hosts):</strong> Needs 4 addresses (2<sup>2</sup>). Mask is <code>/30</code> (32-2=30).
+                    <br> &nbsp; &nbsp; Next available network: <code>10.20.3.32/30</code> (Range 10.20.3.32 - 10.20.3.35)
+                    </p>
+                    
+                    <p><strong>Exercise 5:</strong> The networks <code>.4.0</code>, <code>.5.0</code>, <code>.6.0</code>, <code>.7.0</code> are 4 contiguous <code>/24</code> networks. They form a block of 4. This means we can "give back" 2 bits (2<sup>2</sup>=4). The new mask is /22 (24 - 2 = 22). The summary network is the very first one: <code>172.16.4.0/22</code>.</p>
+
+                    <p><strong>Exercise 6:</strong>
+                    <br>A) <code>A</code> = 10 = <code>1010</code>. <code>F</code> = 15 = <code>1111</code>. Binary = <code>10101111</code>.
+                    <br> &nbsp; &nbsp; Decimal = 128 + 0 + 32 + 0 + 8 + 4 + 2 + 1 = 175.
+                    <br>B) <code>1101</code> = 8+4+0+1 = 13 = <code>D</code>. <code>0011</code> = 0+0+2+1 = 3 = <code>3</code>. Hex = <code>0xD3</code>.
+                    </p>
+                    
+                    <p><strong>Exercise 7:</strong> The client sends the Request as a broadcast to ensure that all DHCP servers (not just the one it chose) see the request. This implicitly tells all the *other* servers that their offers were not accepted, so they can return those offered IPs to their available pool.</p>
+                </div>
+            </details>
+        </section>
+
+        <!-- ****************** -->
+        <!-- * ANSWERS SECTION * -->
+        <!-- ****************** -->
+        <section id="content-answers" class="content-section">
+            <p>This section is password protected. Click the button to enter the password.</p>
+            <button id="btn-show-answers" class="btn-submit btn-unlock">View Answers</button>
+            
+            <div id="answers-content" style="display: none;">
+                <details open>
+                    <summary>Exercise 1: Answers</summary>
+                    <div class="details-content">
+                        <p><strong>A)</strong> <code>11000110</code> (128 + 64 + 4 + 2)</p>
+                        <p><strong>B)</strong> <strong>173</strong> (128 + 32 + 8 + 4 + 1)</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 2: Answers</summary>
+                    <div class="details-content">
+                        <p>Block size = 256 / 4 = 64. New mask = 256 - 64 = 192 (a /26).</p>
+                        
+                        <p><strong>Subnet 1:</strong>
+                        <br>Net: <code>192.168.10.0 /26</code> (255.255.255.192)
+                        <br>Usable: <code>.1</code> to <code>.62</code>
+                        <br>Broadcast: <code>192.168.10.63</code>
+                        </p>
+                        
+                        <p><strong>Subnet 2:</strong>
+                        <br>Net: <code>192.168.10.64 /26</code> (255.255.255.192)
+                        <br>Usable: <code>.65</code> to <code>.126</code>
+                        <br>Broadcast: <code>192.168.10.127</code>
+                        </p>
+                        
+                        <p><strong>Subnet 3:</strong>
+                        <br>Net: <code>192.168.10.128 /26</code> (255.255.255.192)
+                        <br>Usable: <code>.129</code> to <code>.190</code>
+                        <br>Broadcast: <code>192.168.10.191</code>
+                        </p>
+                        
+                        <p><strong>Subnet 4:</strong>
+                        <br>Net: <code>192.168.10.192 /26</code> (255.255.255.192)
+                        <br>Usable: <code>.193</code> to <code>.254</code>
+                        <br>Broadcast: <code>192.168.10.255</code>
+                        </p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 3: Answers</summary>
+                    <div class="details-content">
+                        <p><strong>A)</strong> <code>255.255.255.224</code></p>
+                        <p><strong>B)</strong> <strong>32</strong> (A /27 has 5 host bits: 2<sup>5</sup> = 32)</p>
+                        <p><strong>C)</strong> <strong>30</strong> (32 - 2)</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 4: Answers</summary>
+                    <div class="details-content">
+                        <p><strong>Dept A (500 hosts):</strong> Needs 512 addresses (2<sup>9</sup> = 9 host bits). Mask = /23 (32-9).
+                        <br>Net: <code>10.20.0.0/23</code>
+                        <br>Usable: <code>10.20.0.1</code> to <code>10.20.1.254</code>
+                        </p>
+                        
+                        <p><strong>Dept B (200 hosts):</strong> Needs 256 addresses (2<sup>8</sup> = 8 host bits). Mask = /24 (32-8).
+                        <br>Net: <code>10.20.2.0/24</code> (This is the next available after 10.20.1.255)
+                        <br>Usable: <code>10.20.2.1</code> to <code>10.20.2.254</code>
+                        </p>
+                        
+                        <p><strong>Dept C (30 hosts):</strong> Needs 32 addresses (2<sup>5</sup> = 5 host bits). Mask = /27 (32-5).
+                        <br>Net: <code>10.20.3.0/27</code>
+                        <br>Usable: <code>10.20.3.1</code> to <code>10.20.3.30</code>
+                        </p>
+                        
+                        <p><strong>Link D (2 hosts):</strong> Needs 4 addresses (2<sup>2</sup> = 2 host bits). Mask = /30 (32-2).
+                        <br>Net: <code>10.20.3.32/30</code>
+                        <br>Usable: <code>10.20.3.33</code> to <code>10.20.3.34</code>
+                        </p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 5: Answers</summary>
+                    <div class="details-content">
+                        <p><strong><code>172.16.4.0 /22</code></strong></p>
+                        <p>(This covers the range <code>172.16.4.0</code> to <code>172.16.7.255</code>)</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 6: Answers</summary>
+                    <div class="details-content">
+                        <p><strong>A)</strong> Hex <code>A</code> = 10 = <code>1010</code>. Hex <code>F</code> = 15 = <code>1111</code>.
+                        <br>Binary: <strong><code>10101111</code></strong>
+                        <br>Decimal: 128 + 32 + 8 + 4 + 2 + 1 = <strong>175</strong>
+                        </p>
+                        <p><strong>B)</strong> <code>1101</code> = 13 = <code>D</code>. <code>0011</code> = 3 = <code>3</code>.
+                        <br>Hex: <strong><code>0xD3</code></strong>
+                        </p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Exercise 7: Answers</summary>
+                    <div class="details-content">
+                        <p><strong>A)</strong> <strong>D</strong>iscover, <strong>O</strong>ffer, <strong>R</strong>equest, <strong>A</strong>cknowledge (ACK)</p>
+                        <p><strong>B)</strong> 
+                        <br><strong>Discover:</strong> Is a broadcast because the client has no IP address and does not know the IP address of a DHCP server. It's shouting into the void.
+                        <br><strong>Offer:</strong> Is also a broadcast because the client *still* does not have an IP address. It cannot receive a unicast packet, so the server must broadcast the offer for the client to hear it.
+                        </p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- ************************ -->
+        <!-- * EVALUATION SECTION * -->
+        <!-- ************************ -->
+        <section id="content-evaluation" class="content-section">
+            <h2>Evaluation Grid</h2>
+            <p>Answers will be graded based on correctness and the clarity of the work shown (where applicable).</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Exercise</th>
+                        <th>Topic</th>
+                        <th>Points</th>
+                        <th>Grading Criteria</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ex 1</td>
+                        <td>Binary/Decimal</td>
+                        <td>10</td>
+                        <td>5 points for each correct conversion (A and B).</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 2</td>
+                        <td>Basic Subnetting</td>
+                        <td>20</td>
+                        <td>5 points for each correctly identified subnet (must include all 5 pieces of info).</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 3</td>
+                        <td>CIDR</td>
+                        <td>10</td>
+                        <td>3 points for A, 3 for B, 4 for C.</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 4</td>
+                        <td>VLSM</td>
+                        <td>20</td>
+                        <td>5 points for each correctly specified subnet, starting with the largest.</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 5</td>
+                        <td>Summarization</td>
+                        <td>15</td>
+                        <td>10 points for the correct summary route (/22), 5 for the correct network ID.</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 6</td>
+                        <td>Hexadecimal</td>
+                        <td>10</td>
+                        <td>5 points for each correct conversion (A and B).</td>
+                    </tr>
+                    <tr>
+                        <td>Ex 7</td>
+                        <td>DHCP</td>
+                        <td>15</td>
+                        <td>5 points for listing the 4 steps, 10 points for the explanations.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td></td>
+                        <td><strong>100</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <!-- --- Password Modal --- -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Password Required</h3>
+            <div class="modal-instructions">
+                <p>Please enter the password to view the answers.</p>
+                <p>If you want to Cancel the action, click outside the "Password Required" box.</p>
+                <p>You can see the entered password by clicking on the "eye" icon.</p>
+            </div>
+            <div class="password-input-wrapper">
+                <input type="password" id="password-input" placeholder="Enter password">
+                <button id="toggle-password" title="Show/hide password" type="button">👁</button>
+            </div>
+            <div id="password-error"></div>
+            <div class="modal-actions">
+                <button id="btn-modal-cancel" class="btn-modal btn-cancel">Cancel</button>
+                <button id="btn-modal-submit" class="btn-modal btn-unlock">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const header = document.getElementById('app-header');
+    const nav = document.querySelector('.app-nav');
+    
+    // --- Dynamic Sticky Top for Nav ---
+    function updateNavTopPosition() {
+        const headerHeight = header.offsetHeight;
+        document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
+    }
+
+    // Run on load and on window resize
+    updateNavTopPosition();
+    window.addEventListener('resize', updateNavTopPosition);
+
+
+    // --- Theme Switch ---
+    const themeCheckbox = document.getElementById('theme-checkbox');
+    const htmlEl = document.documentElement;
+
+    // Check for saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        htmlEl.classList.remove('theme-light');
+        htmlEl.classList.add('theme-dark');
+        themeCheckbox.checked = true;
+    }
+
+    themeCheckbox.addEventListener('change', () => {
+        if (themeCheckbox.checked) {
+            htmlEl.classList.remove('theme-light');
+            htmlEl.classList.add('theme-dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            htmlEl.classList.remove('theme-dark');
+            htmlEl.classList.add('theme-light');
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // --- Tab Navigation ---
+    const tabs = document.querySelectorAll('.nav-tab');
+    const sections = document.querySelectorAll('.content-section');
+    const answersNavTab = document.getElementById('nav-answers');
+    const submitSection = document.querySelector('.submit-section');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Do not switch tab if it's the "Answers" tab and it's not unlocked
+            if (tab.dataset.target === 'answers' && !sessionStorage.getItem('answersUnlocked')) {
+                showPasswordModal();
+                return;
+            }
+
+            // Handle tabs
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Handle content
+            const targetId = 'content-' + tab.dataset.target;
+            sections.forEach(s => {
+                s.classList.remove('active');
+                if (s.id === targetId) {
+                    s.classList.add('active');
+                }
+            });
+            
+            // Show/Hide Submit section
+             if (tab.dataset.target === 'exercises') {
+                 // Check if submit section exists before trying to access its style
+                 if (submitSection) submitSection.style.display = 'block';
+             } else {
+                 if (submitSection) submitSection.style.display = 'none';
+             }
+        });
+    });
+    
+    // Initial hide of submit section if it exists
+    if (submitSection) {
+        submitSection.style.display = 'none'; // Hide it since Lecture is the default view.
+        // Make sure it's shown if the initial active tab IS exercises (though default is lecture)
+        const initialActiveTab = document.querySelector('.nav-tab.active');
+        if (initialActiveTab && initialActiveTab.dataset.target === 'exercises') {
+             submitSection.style.display = 'block';
+        }
+    }
+    
+    // --- Expand/Collapse All ---
+    const btnExpand = document.getElementById('btn-expand-all');
+    const btnCollapse = document.getElementById('btn-collapse-all');
+
+    btnExpand.addEventListener('click', () => {
+        // Target details only within the *currently active* section
+        const activeSection = document.querySelector('.content-section.active');
+        if (activeSection) {
+            const allDetails = activeSection.querySelectorAll('details');
+            allDetails.forEach(details => details.open = true);
+        }
+    });
+
+    btnCollapse.addEventListener('click', () => {
+        const activeSection = document.querySelector('.content-section.active');
+         if (activeSection) {
+            const allDetails = activeSection.querySelectorAll('details');
+            allDetails.forEach(details => details.open = false);
+         }
+    });
+
+    // --- Password Modal Logic ---
+    const modal = document.getElementById('password-modal');
+    const btnShowAnswers = document.getElementById('btn-show-answers');
+    const btnModalSubmit = document.getElementById('btn-modal-submit');
+    const btnModalCancel = document.getElementById('btn-modal-cancel');
+    const passwordInput = document.getElementById('password-input');
+    const passwordError = document.getElementById('password-error');
+    const answersContent = document.getElementById('answers-content');
+    const togglePassword = document.getElementById('toggle-password');
+    const correctPassword = 'student2025';
+
+    function showPasswordModal() {
+        if(modal) modal.style.display = 'flex'; // Check if modal exists
+        if(passwordInput) { // Check if passwordInput exists
+             passwordInput.value = '';
+             passwordInput.focus();
+        }
+       if(passwordError) passwordError.textContent = ''; // Check if passwordError exists
+
+    }
+
+    function hidePasswordModal() {
+         if(modal) modal.style.display = 'none'; // Check if modal exists
+    }
+
+    function unlockAnswers() {
+        sessionStorage.setItem('answersUnlocked', 'true');
+        if(answersContent) answersContent.style.display = 'block'; // Check if answersContent exists
+        if(btnShowAnswers) btnShowAnswers.style.display = 'none'; // Check if btnShowAnswers exists
+        if(answersNavTab) answersNavTab.textContent = "Answers (Unlocked)"; // Check if answersNavTab exists
+        hidePasswordModal();
+        
+        // Switch to the answers tab (if elements exist)
+        const currentActiveTab = document.querySelector('.nav-tab.active');
+        const currentActiveSection = document.querySelector('.content-section.active');
+        const answersSection = document.getElementById('content-answers');
+
+        if(currentActiveTab) currentActiveTab.classList.remove('active');
+        if(currentActiveSection) currentActiveSection.classList.remove('active');
+        if(answersNavTab) answersNavTab.classList.add('active');
+        if(answersSection) answersSection.classList.add('active');
+    }
+    
+    // Add event listeners only if the elements exist
+    if(btnShowAnswers) btnShowAnswers.addEventListener('click', showPasswordModal);
+    
+    if(modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hidePasswordModal();
+            }
+        });
+    }
+
+    if(btnModalCancel) btnModalCancel.addEventListener('click', hidePasswordModal);
+
+    if(btnModalSubmit) {
+        btnModalSubmit.addEventListener('click', () => {
+            if (passwordInput && passwordInput.value === correctPassword) { // Check passwordInput
+                unlockAnswers();
+            } else if (passwordError) { // Check passwordError
+                passwordError.textContent = 'Incorrect password. Please try again.';
+            }
+        });
+    }
+    
+    if(passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+               if(btnModalSubmit) btnModalSubmit.click(); // Check btnModalSubmit
+            }
+        });
+    }
+    
+    if(togglePassword && passwordInput) { // Check both elements
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.textContent = type === 'password' ? '👁' : '🙈';
+        });
+    }
+
+
+    // --- File Import Logic ---
+    const importButtons = document.querySelectorAll('.btn-import');
+    importButtons.forEach(button => {
+        const targetId = button.dataset.target;
+        const fileInput = button.previousElementSibling;
+        const textarea = document.getElementById(targetId);
+
+        // Check if elements exist before adding listeners
+        if (fileInput && textarea) {
+            button.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Check for plain text files
+                if (file.type === 'text/plain' || file.type === 'text/markdown') {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        textarea.value += `\n--- Imported Content from ${file.name} ---\n`;
+                        textarea.value += event.target.result;
+                        textarea.value += `\n--- End of ${file.name} ---\n`;
+                    };
+                    reader.readAsText(file);
+                } else {
+                    // For all other files (images, pdf, docx, etc.)
+                    textarea.value += `\n[File attached: ${file.name} (Content cannot be embedded)]\n`;
+                }
+                
+                // Reset file input to allow importing the same file again
+                e.target.value = null;
+            });
+        }
+    });
+
+    // --- Submit Work Logic ---
+    const btnSendEmail = document.getElementById('btn-send-email');
+    const btnDownloadAnswers = document.getElementById('btn-download-answers');
+    const studentNameInput = document.getElementById('student-name');
+    const studentIdInput = document.getElementById('student-id');
+
+    function collectAnswers() {
+        const name = studentNameInput ? studentNameInput.value || 'N/A' : 'N/A'; // Check existence
+        const id = studentIdInput ? studentIdInput.value || 'N/A' : 'N/A'; // Check existence
+        let content = `Student Name: ${name}\nStudent ID: ${id}\n\n`;
+        content += "==============================\n\n";
+        
+        const answerBoxes = document.querySelectorAll('#content-exercises .answer-box'); // Scope to exercises
+        answerBoxes.forEach(box => {
+            if(box.value.trim() !== '') {
+                const question = box.dataset.question || 'Unknown Question';
+                content += `--- ${question} ---\n`;
+                content += box.value + "\n\n";
+            }
+        });
+        return content;
+    }
+
+    if(btnSendEmail) { // Check existence
+        btnSendEmail.addEventListener('click', () => {
+            const nameValue = studentNameInput ? studentNameInput.value : 'Student'; // Check existence
+            const subject = "Networking Answers Submission - " + (nameValue || 'Student');
+            const body = collectAnswers();
+            
+            const mailtoLink = `mailto:asengroa@hotmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // This limit is to avoid URL length issues in some email clients
+            if (mailtoLink.length > 2000) {
+                 // Use a more user-friendly message display instead of alert()
+                 console.error("Mailto link too long. Please use download.");
+                 // Optionally, display this message in the UI, e.g., in the submit-instructions area
+                 const instructionsP = document.querySelector('.submit-instructions p');
+                 if(instructionsP) instructionsP.textContent = "Your answers are too long to send via email directly. Please use the 'Download Answers' button instead.";
+
+            } else {
+                window.location.href = mailtoLink;
+            }
+        });
+    }
+
+    if(btnDownloadAnswers) { // Check existence
+        btnDownloadAnswers.addEventListener('click', () => {
+            const content = collectAnswers();
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'copied_content.txt';
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        });
+    }
+
+});
+</script>
+
+</body>
+</html>
+

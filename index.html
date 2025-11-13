@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Chosen Palette: Warm Neutrals (Gray, White, Blue Accent) -->
+    <!-- Application Structure Plan: Designed a 2-column SPA. Left column is a persistent vertical navigation for "Days 1-6" + "Overview". Right column is a dynamic content area. This structure is superior to the report's simple list as it allows non-linear exploration and "at-a-glance" comparison. The "Overview" (default) provides high-level context with a bar chart, and each "Day" view provides specific topics plus custom HTML/CSS visual aids (like OSI model, topologies) for better understanding. User flow: Click nav -> JS updates active state, re-renders content in right column. This is a classic, intuitive "module explorer" pattern. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: 6-day curriculum list. Goal: Show curriculum density. Viz: Bar Chart (Chart.js). Interaction: None (static info). Justification: Gives an immediate visual summary of the course structure.
+        - Report Info: Day 2 (Layered Models). Goal: Explain a layered concept. Viz: HTML/CSS Flexbox Diagram (OSI Model). Interaction: None (visual aid). Justification: A static list "Networking Layered Models" is weak. A visual diagram is a huge learning improvement. NO SVG/Mermaid.
+        - Report Info: Day 3 (Topologies). Goal: Show different structures. Viz: HTML/CSS Grid Diagram (Topology Icons). Interaction: None (visual aid). Justification: Visual icons for Bus, Star, etc., are more memorable than text. NO SVG/Mermaid.
+        - Report Info: Day 6 (TCP/UDP). Goal: Compare two protocols. Viz: HTML Table. Interaction: None (static info). Justification: A table is the clearest way to compare two items side-by-side.
+        - Report Info: All other topics. Goal: Inform. Viz: HTML/CSS "Concept Cards". Interaction: Hover effect. Justification: Breaks up text, makes individual concepts distinct. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Networking Fundamentals Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .nav-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-item.active {
+            transform: translateX(4px);
+        }
+        .concept-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .concept-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .osi-layer {
+            border-bottom: 2px solid;
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .topology-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+        }
+        .topo-line {
+            background-color: #3b82f6;
+            height: 4px;
+        }
+        .topo-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #3b82f6;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container max-w-7xl mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Networking Fundamentals</h1>
+            <p class="text-lg text-gray-600">An Interactive Curriculum Explorer</p>
+        </header>
+
+        <div class="md:flex md:space-x-8">
+            
+            <nav class="md:w-1/4 mb-6 md:mb-0">
+                <div id="day-navigation" class="sticky top-8 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Course Modules</h2>
+                    <div class="space-y-1">
+                        <button data-day="overview" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Overview</button>
+                        <button data-day="day1" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 1: Foundations</button>
+                        <button data-day="day2" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 2: Layered Models</button>
+                        <button data-day="day3" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 3: Core Components</button>
+                        <button data-day="day4" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 4: Addressing & Virtual</button>
+                        <button data-day="day5" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 5: Routing & Wide Area</button>
+                        <button data-day="day6" class="nav-item w-full text-left p-3 rounded-lg cursor-pointer hover:bg-gray-100 font-medium">Day 6: Transport & Tools</button>
+                    </div>
+                </div>
+            </nav>
+
+            <main id="content-area" class="md:w-3/4 bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 min-h-[60vh]">
+                <!-- Content is rendered here by JavaScript -->
+            </main>
+
+        </div>
+    </div>
+
+    <!-- START: New Footer Section -->
+    <footer class="bg-gray-800 text-gray-300 mt-12 py-8">
+        <div class="container max-w-7xl mx-auto px-4 md:px-8 space-y-8">
+            
+            <!-- Legal Disclaimers -->
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-4">Legal Disclaimer</h3>
+                <p class="text-sm text-gray-400">
+                    The information provided in this course is for educational purposes only. Cyber Soho and its affiliates assume no responsibility for errors or omissions in the contents. All information is provided "as-is" without warranty of any kind. Use of the techniques and information contained herein is at your own risk. Cyber Soho is not responsible for any damages or losses, direct or indirect, arising from the use of this material.
+                </p>
+            </div>
+
+            <!-- Security Warning -->
+            <div class="bg-red-900 border border-red-600 rounded-lg p-4">
+                <h3 class="text-xl font-bold text-white mb-2">SECURITY & COMPLIANCE WARNING</h3>
+                <p class="text-red-100 font-medium">
+                    All lab exercises and techniques demonstrated are for educational purposes in isolated, sandboxed environments. You are responsible for ensuring your actions comply with all applicable local, state, national, and international laws. Unauthorized access to or testing of networks or systems is illegal and strictly prohibited. Practice these skills responsibly and ethically.
+                </p>
+            </div>
+
+            <!-- Non-Affiliation Disclaimer -->
+            <div>
+                <h3 class="text-xl font-semibold text-white mb-4">Non-Affiliation & Editorial Disclaimer</h3>
+                <p class="text-sm text-gray-400">
+                    This content is independently created by Cyber Soho. Any product names, logos, brands, and other trademarks or images featured or referred to within this course are the property of their respective trademark holders. These trademark holders are not affiliated with Cyber Soho, our products, or our websites. They do not sponsor or endorse Cyber Soho or any of our products.
+                </p>
+            </div>
+
+            <!-- Copyright -->
+            <div class="border-t border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-white mb-2">Intellectual Property</h3>
+                <p class="text-xs text-gray-500">
+                    &copy; 2025 Cyber Soho. All Rights Reserved. This content, including all HTML, text, and associated files, is the intellectual property of Cyber Soho and is protected by copyright law. No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of Cyber Soho.
+                </p>
+                <p class="text-xs text-gray-500 mt-2">
+                    For permissions, contact: [Your GitHub/Contact Email Here]
+                </p>
+            </div>
+        </div>
+    </footer>
+    <!-- END: New Footer Section -->
+
+
+    <script>
+        // START: Modified dayData object
+        const dayData = {
+            overview: {
+                title: "Course Overview",
+                intro: "Welcome to the Networking Fundamentals curriculum. This 6-day course provides a comprehensive introduction to computer networks, from basic concepts to core protocols and tools. Select a day from the navigation to explore the specific topics covered. This chart visualizes the number of distinct topics introduced each day.",
+                topics: []
+            },
+            day1: {
+                title: "Day 1: Introduction to Computer Networks",
+                intro: "The first day establishes the foundation, defining what a computer network is, its purpose, and the fundamental concepts that underpin all network communication.",
+                topics: ["Computer Networks"],
+                link: "01. ch-01,02,03.html" // Added link
+            },
+            day2: {
+                title: "Day 2: Introduction to the Networking Layered Models",
+                intro: "Day 2 introduces the conceptual frameworks used to understand and standardize network communication. These models, like OSI and TCP/IP, divide complex networking tasks into manageable 'layers'.",
+                topics: ["Networking Layered Models"],
+                link: "02. intro-to-osi.html" // Added link
+            },
+            day3: {
+                title: "Day 3: Core Network Components & Concepts",
+                intro: "This module breaks down the fundamental building blocks of a local network. We explore the 'what' and 'where' of network communication, from physical layouts to logical addressing.",
+                topics: ["LAN", "IP", "Domains", "Topologies", "Protocols"],
+                link: "03. day03.html" // Added link
+            },
+            day4: {
+                title: "Day 4: Addressing, Subnetting, and VLANs",
+                intro: "Day 4 dives deeper into IP addressing, covering essential services that automate it (DHCP) and techniques to logically segment and manage networks (Subnetting, VLANs).",
+                topics: ["ARP", "DHCP", "Subnetting", "VLAN"],
+                link: "04. day04.html" // Added link (using attached file name)
+            },
+            day5: {
+                title: "Day 5: Routing, WAN, and Naming",
+                intro: "This module expands our view beyond the local network. We learn how networks are interconnected (Routing, Gateway, WAN) and how we find resources using human-readable names (DNS).",
+                topics: ["Default Gateway", "Routing and Summarization", "WAN", "DNS"],
+                link: "how-to_dns.html" // Added link
+            },
+            day6: {
+                title: "Day 6: Transport Layer & Network Tools",
+                intro: "The final day focuses on how data is reliably (or unreliably) transported (TCP, UDP), how private addresses are translated for the internet (NAT/PAT), and the essential tools for troubleshooting.",
+                topics: ["NAT and PAT", "TCP and UDP", "NET Tools and T-Shoot"],
+                link: "last-one.html" // Added link
+            }
+        };
+        // END: Modified dayData object
+
+        let activeDay = 'overview';
+        let overviewChart = null;
+        // REMOVED: const navContainer = document.getElementById('day-navigation');
+        // REMOVED: const contentArea = document.getElementById('content-area');
+
+        function renderOSIModel() {
+            const layers = [
+                { name: "7. Application", color: "border-red-400", desc: "User-facing protocols (HTTP, FTP, SMTP)" },
+                { name: "6. Presentation", color: "border-orange-400", desc: "Data translation, encryption, compression" },
+                { name: "5. Session", color: "border-yellow-400", desc: "Manages connections: start, stop, restart" },
+                { name: "4. Transport", color: "border-green-400", desc: "End-to-end connections (TCP, UDP)" },
+                { name: "3. Network", color: "border-blue-400", desc: "Path determination & IP addressing" },
+                { name: "2. Data Link", color: "border-indigo-400", desc: "Hardware addressing (MAC), error checking" },
+                { name: "1. Physical", color: "border-purple-400", desc: "Transmits raw bits (cables, hubs)" }
+            ];
+            
+            let html = '<h3 class="text-xl font-semibold mb-4 text-gray-800">OSI 7-Layer Model</h3>';
+            html += '<div class="flex flex-col-reverse max-w-md mx-auto border-x-2 border-t-2 border-gray-300 rounded-t-lg overflow-hidden shadow-md">';
+            layers.forEach(layer => {
+                html += `
+                    <div class="osi-layer ${layer.color} bg-white">
+                        <span class="font-bold">${layer.name}</span>
+                        <p class="text-sm font-normal text-gray-600 hidden sm:block">${layer.desc}</p>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderTopologies() {
+            return `
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Common Network Topologies</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    
+                    <div class="text-center">
+                        <div class="topology-icon">
+                            <div class="w-full relative flex items-center px-4">
+                                <div class="topo-line flex-1"></div>
+                                <div class="absolute left-4 topo-dot"></div>
+                                <div class="absolute left-1/2 -translate-x-1/2 topo-dot"></div>
+                                <div class="absolute right-4 topo-dot"></div>
+                            </div>
+                        </div>
+                        <p class="mt-2 font-semibold">Bus</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="topology-icon">
+                            <div class="relative w-16 h-16">
+                                <div class="topo-dot absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                                <div class="topo-dot absolute top-0 left-1/2 -translate-x-1/2"></div>
+                                <div class="topo-dot absolute bottom-0 left-1/2 -translate-x-1/2"></div>
+                                <div class="topo-dot absolute left-0 top-1/2 -translate-y-1/2"></div>
+                                <div class="topo-dot absolute right-0 top-1/2 -translate-y-1/2"></div>
+                                <div class="topo-line absolute w-px h-6 top-0 left-1/2 -translate-x-1/2" style="transform: rotate(180deg) translate(0, 8px); transform-origin: top;"></div>
+                                <div class="topo-line absolute w-px h-6 top-full left-1/2 -translate-x-1/2" style="transform: rotate(0deg) translate(0, -8px); transform-origin: top;"></div>
+                                <div class="topo-line absolute w-6 h-px top-1/2 left-0 -translate-y-1/2" style="transform: rotate(90deg) translate(8px, 0); transform-origin: left;"></div>
+                                <div class="topo-line absolute w-6 h-px top-1/2 right-0 -translate-y-1/2" style="transform: rotate(-90deg) translate(-8px, 0); transform-origin: right;"></div>
+                            </div>
+                        </div>
+                        <p class="mt-2 font-semibold">Star</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="topology-icon">
+                            <div class="relative w-16 h-16 border-4 border-blue-500 rounded-full">
+                                <div class="topo-dot absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                                <div class="topo-dot absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"></div>
+                                <div class="topo-dot absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2"></div>
+                                <div class="topo-dot absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2"></div>
+                            </div>
+                        </div>
+                        <p class="mt-2 font-semibold">Ring</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="topology-icon">
+                             <div class="relative w-16 h-16">
+                                <div class="topo-dot absolute top-1 left-1"></div>
+                                <div class="topo-dot absolute top-1 right-1"></div>
+                                <div class="topo-dot absolute bottom-1 left-1"></div>
+                                <div class="topo-dot absolute bottom-1 right-1"></div>
+                                <div class="topo-line absolute h-px w-full top-1 left-1" style="transform: scaleX(0.8);"></div>
+                                <div class="topo-line absolute h-px w-full bottom-1 left-1" style="transform: scaleX(0.8);"></div>
+                                <div class="topo-line absolute w-px h-full top-1 left-1" style="transform: scaleY(0.8);"></div>
+                                <div class="topo-line absolute w-px h-full top-1 right-1" style="transform: scaleY(0.8);"></div>
+                                <div class="topo-line absolute w-full h-px top-1/2 left-0" style="transform: rotate(45deg) scaleX(1.1);"></div>
+                            </div>
+                        </div>
+                        <p class="mt-2 font-semibold">Mesh</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderTcpUdpTable() {
+            return `
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">TCP vs. UDP</h3>
+                <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                    <table class="w-full min-w-max divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TCP (Transmission Control Protocol)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UDP (User Datagram Protocol)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Connection</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Connection-oriented (requires handshake)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Connectionless (no handshake)</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Reliability</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Reliable (guarantees delivery, order, and error-checking)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Unreliable (no guaranteed delivery or order)</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Speed</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Slower (due to overhead)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Faster (low overhead)</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Use Cases</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Web (HTTP), Email (SMTP), File Transfer (FTP)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Streaming, Online Gaming, DNS, VoIP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function initOverviewChart() {
+            if (overviewChart) {
+                overviewChart.destroy();
+            }
+            const ctx = document.getElementById('overviewChartCanvas').getContext('2d');
+            if (!ctx) return; // Add guard
+
+            // FIX: Define topicCounts and dayLabels here
+            const topicCounts = Object.values(dayData).map(d => d.topics.length).slice(1);
+            const dayLabels = Object.keys(dayData).slice(1).map((key, i) => `Day ${i + 1}`);
+
+            overviewChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Number of Topics',
+                        data: topicCounts,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            displayColors: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // START: Modified renderContent function
+        function renderContent() {
+            if (overviewChart) {
+                overviewChart.destroy();
+                overviewChart = null;
+            }
+
+            const data = dayData[activeDay];
+            let html = `
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">${data.title}</h2>
+                <p class="text-gray-700 mb-6">${data.intro}</p>
+            `;
+
+            // MODIFICATION 1: Add chapter link button
+            if (data.link) {
+                html += `
+                    <a href="${data.link}" target="_blank" 
+                       class="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors mb-8">
+                        View Full Chapter Content
+                    </a>
+                `;
+            }
+            // END MODIFICATION 1
+
+            if (data.topics.length > 0) {
+                
+                // MODIFICATION 2: Add link for Day 6 "Key Concepts"
+                if (activeDay === 'day6') {
+                    html += `
+                        <a href="how-to-networking.html" target="_blank" class="hover:underline">
+                            <h3 class="text-xl font-semibold mb-4 text-blue-700 inline-block hover:text-blue-800">Key Concepts</h3>
+                        </a>
+                    `;
+                } else {
+                    html += '<h3 class="text-xl font-semibold mb-4 text-gray-800">Key Concepts</h3>';
+                }
+                // END MODIFICATION 2
+
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">';
+                data.topics.forEach(topic => {
+                    html += `
+                        <div class="concept-card bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <span class="font-medium text-blue-700">${topic}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            switch (activeDay) {
+                case 'overview':
+                    html += '<div class="chart-container mt-8"><canvas id="overviewChartCanvas"></canvas></div>';
+                    break;
+                case 'day2':
+                    html += renderOSIModel();
+                    break;
+                case 'day3':
+                    html += renderTopologies();
+                    break;
+                case 'day6':
+                    html += renderTcpUdpTable();
+                    break;
+            }
+            
+            // MODIFICATION: Get contentArea inside the function
+            const contentArea = document.getElementById('content-area');
+            if (contentArea) {
+                contentArea.innerHTML = html;
+            } else {
+                console.error('Error: content-area element not found.');
+            }
+
+
+            if (activeDay === 'overview') {
+                initOverviewChart();
+            }
+        }
+        // END: Modified renderContent function
+
+        function updateNavStyles() {
+            // MODIFICATION: Get navContainer inside the function
+            const navContainer = document.getElementById('day-navigation');
+            if (!navContainer) {
+                 console.error('Error: day-navigation element not found.');
+                 return;
+            }
+            const navItems = navContainer.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.dataset.day === activeDay) {
+                    item.classList.add('active', 'bg-blue-600', 'text-white');
+                    item.classList.remove('hover:bg-gray-100');
+                } else {
+                    item.classList.remove('active', 'bg-blue-600', 'text-white');
+                    item.classList.add('hover:bg-gray-100');
+                }
+            });
+        }
+
+        function showDay(dayId) {
+            activeDay = dayId;
+            updateNavStyles();
+            renderContent();
+        }
+
+        // REMOVED: navContainer.addEventListener('click', (e) => { ... });
+
+        // MODIFICATION: Wrap listener attachment and initial call in DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const navContainer = document.getElementById('day-navigation');
+            
+            if (navContainer) {
+                navContainer.addEventListener('click', (e) => {
+                    const navItem = e.target.closest('.nav-item');
+                    if (navItem && navItem.dataset.day) {
+                        showDay(navItem.dataset.day);
+                    }
+                });
+            } else {
+                console.error('Error: day-navigation element not found. Clicks will not work.');
+            }
+
+            // Initial load
+            showDay('overview');
+        });
+
+    </script>
+</body>
+</html>

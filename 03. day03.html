@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Networking Course Review</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <!-- Custom Styles for Solarized Themes and App -->
+    <style>
+        :root {
+            /* Solarized Light */
+            --light-base03: #002b36; /*v-dark-gray*/
+            --light-base02: #073642; /*dark-gray*/
+            --light-base01: #586e75; /*med-gray*/
+            --light-base00: #657b83; /*gray*/
+            --light-base0: #839496;  /*light-gray*/
+            --light-base1: #93a1a1;  /*v-light-gray*/
+            --light-base2: #eee8d5;  /*light-beige*/
+            --light-base3: #fdf6e3;  /*beige*/
+            --light-yellow: #b58900;
+            --light-orange: #cb4b16;
+            --light-red: #dc322f;
+            --light-magenta: #d33682;
+            --light-violet: #6c71c4;
+            --light-blue: #268bd2;
+            --light-cyan: #2aa198;
+            --light-green: #859900;
+
+            /* Solarized Dark */
+            --dark-base03: #fdf6e3; /*beige*/
+            --dark-base02: #eee8d5; /*light-beige*/
+            --dark-base01: #93a1a1;  /*v-light-gray*/
+            --dark-base00: #839496;  /*light-gray*/
+            --dark-base0: #657b83; /*gray*/
+            --dark-base1: #586e75; /*med-gray*/
+            --dark-base2: #073642; /*dark-gray*/
+            --dark-base3: #002b36; /*v-dark-gray*/
+            --dark-yellow: #b58900;
+            --dark-orange: #cb4b16;
+            --dark-red: #dc322f;
+            --dark-magenta: #d33682;
+            --dark-violet: #6c71c4;
+            --dark-blue: #268bd2;
+            --dark-cyan: #2aa198;
+            --dark-green: #859900;
+        }
+
+        /* Light Theme */
+        .solarized-light {
+            --bg-color: var(--light-base3);
+            --text-color: var(--light-base02);
+            --header-bg: var(--light-base2);
+            --border-color: var(--light-base1);
+            --accent-color: var(--light-blue);
+            --link-color: var(--light-blue);
+            --card-bg: var(--light-base2);
+            --code-bg: var(--light-base2);
+            --pre-bg: var(--light-base2);
+            --inline-code-bg: var(--light-base2);
+            --inline-code-text: var(--light-base01);
+            --h-color: var(--light-base01);
+            --strong-color: var(--light-base01);
+            --button-bg: var(--light-cyan);
+            --button-text: var(--light-base3);
+            --button-hover: var(--light-blue);
+        }
+
+        /* Dark Theme */
+        .solarized-dark {
+            --bg-color: var(--dark-base3);
+            --text-color: var(--dark-base0);
+            --header-bg: var(--dark-base2);
+            --border-color: var(--dark-base1);
+            --accent-color: var(--dark-blue);
+            --link-color: var(--dark-blue);
+            --card-bg: var(--dark-base2);
+            --code-bg: var(--dark-base2);
+            --pre-bg: var(--dark-base2);
+            --inline-code-bg: var(--dark-base2);
+            --inline-code-text: var(--dark-base1);
+            --h-color: var(--dark-base1);
+            --strong-color: var(--dark-base1);
+            --button-bg: var(--dark-cyan);
+            --button-text: var(--dark-base3);
+            --button-hover: var(--dark-blue);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Header and Nav */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background-color: rgba(var(--header-bg-rgb), 0.8);
+        }
+        
+        /* Dynamic RGB variables for transparent header */
+        .solarized-light .sticky-header { --header-bg-rgb: 238, 232, 213; }
+        .solarized-dark .sticky-header { --header-bg-rgb: 7, 54, 66; }
+
+        .nav-link {
+            padding: 1rem;
+            border-bottom: 2px solid transparent;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .nav-link.active, .nav-link:hover {
+            border-bottom-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* Theme Toggle Switch */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 24px;
+            position: relative;
+            width: 44px;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .slider {
+            background-color: var(--light-base01);
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+        }
+        .slider:before {
+            background-color: var(--light-base3);
+            bottom: 4px;
+            content: "";
+            height: 16px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 16px;
+        }
+        .slider.round {
+            border-radius: 24px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--dark-cyan);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: var(--dark-base3);
+        }
+        /* Icons for toggle */
+        .theme-switch-wrapper svg {
+            color: var(--text-color);
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Main Content */
+        .page-content {
+            padding-top: 1rem;
+        }
+
+        /* Collapsible Sections */
+        .collapsible-header {
+            cursor: pointer;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .collapsible-header:hover {
+            background-color: var(--header-bg);
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 0 1.5rem;
+            background-color: var(--bg-color);
+        }
+        .collapsible-content.open {
+            padding: 1.5rem;
+        }
+        .collapsible-header .icon {
+            transition: transform 0.3s ease;
+        }
+        .collapsible-header.open .icon {
+            transform: rotate(90deg);
+        }
+
+        /* Q&A Flip Cards */
+        .flip-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+            min-height: 200px;
+            border-radius: 12px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .flip-card-front {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .flip-card-back {
+            background-color: var(--header-bg);
+            color: var(--text-color);
+            transform: rotateY(180deg);
+            cursor: pointer;
+        }
+        .flip-card-front h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        /* General Content Styling */
+        .content-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .content-container h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--h-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .content-container h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--h-color);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .content-container h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--h-color);
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .content-container p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        .content-container ul {
+            list-style-type: disc;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        .content-container li {
+            margin-bottom: 0.5rem;
+        }
+        .content-container a {
+            color: var(--link-color);
+            text-decoration: underline;
+        }
+        .content-container strong {
+            color: var(--strong-color);
+            font-weight: 600;
+        }
+        .content-container pre {
+            background-color: var(--pre-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .content-container code {
+            background-color: var(--inline-code-bg);
+            color: var(--inline-code-text);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .content-container pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+        .content-container svg {
+            display: block;
+            margin: 1.5rem auto;
+            max-width: 100%;
+            height: auto;
+            background-color: #ffffff; /* White background for diagrams */
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Dashboard cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .dashboard-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .dashboard-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+        }
+        .dashboard-card p {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body class="solarized-light">
+
+    <!-- Sticky Header -->
+    <header class="sticky-header shadow-md">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Left: Title -->
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-2xl font-bold" style="color: var(--strong-color);">Networking Course Review</h1>
+                </div>
+
+                <!-- Right: Theme Switch and Nav -->
+                <div class="flex items-center space-x-6">
+                    <!-- Theme Switch -->
+                    <div class="theme-switch-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-2">
+                            <path fill-rule="evenodd" d="M9.5 2.22c.32-.006.64.006.96.028a.75.75 0 0 1 .63.8.5.5 0 0 0 .58.58 8.5 8.5 0 1 1-9.36 9.36.5.5 0 0 0-.58-.58.75.75 0 0 1-.8-.63A8.5 8.5 0 0 1 9.5 2.22ZM10 4.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" clip-rule="evenodd" />
+                        </svg>
+                        <label class="theme-switch" for="theme-toggle">
+                            <input type="checkbox" id="theme-toggle" />
+                            <span class="slider round"></span>
+                        </label>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-2">
+                            <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586Z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Navigation -->
+        <nav class="border-b border-t" style="border-color: var(--border-color); background-color: var(--bg-color);">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-center space-x-8">
+                    <a class="nav-link active" data-page="dashboard">Dashboard</a>
+                    <a class="nav-link" data-page="course-review">Course Review</a>
+                    <a class="nav-link" data-page="prep-questions">Prep Questions</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Dashboard Page -->
+        <section id="dashboard" class="page-content">
+            <div class="content-container mb-6">
+                <h2 class="text-3xl font-bold mb-4">Welcome to Your Networking Review!</h2>
+                <p class="text-lg">
+                    This page contains a comprehensive review of all the core networking concepts from your course. 
+                    Use the navigation above to move between sections:
+                </p>
+                <ul class="list-disc pl-6 text-lg">
+                    <li class="mb-2"><strong>Dashboard:</strong> This welcome page.</li>
+                    <li class="mb-2"><strong>Course Review:</strong> All lecture content, including diagrams, organized by topic.</li>
+                    <li class="mb-2"><strong>Prep Questions:</strong> Interactive flashcards to test your knowledge on key concepts.</li>
+                </ul>
+            </div>
+
+            <h3 class="text-2xl font-semibold mb-4" style="color: var(--h-color);">Topics Covered</h3>
+            <div class="dashboard-grid">
+                <div class="dashboard-card" data-topic="lan">
+                    <h3>LANs & Topologies</h3>
+                    <p>SOHO vs. Enterprise, Star, Mesh, and Hub & Spoke topologies.</p>
+                </div>
+                <div class="dashboard-card" data-topic="ethernet">
+                    <h3>Introduction to Ethernet</h3>
+                    <p>Physical & Data Link layers, cabling (UTP/Fiber), duplex, and MAC addresses.</p>
+                </div>
+                <div class="dashboard-card" data-topic="domains">
+                    <h3>Collision & Broadcast Domains</h3>
+                    <p>How hubs, switches, and routers segment network traffic.</p>
+                </div>
+                <div class="dashboard-card" data-topic="switching">
+                    <h3>Switch Operations</h3>
+                    <p>How switches learn MAC addresses and forward frames.</p>
+                </div>
+                 <div class="dashboard-card" data-topic="poe">
+                    <h3>Power over Ethernet (PoE)</h3>
+                    <p>Powering devices like phones and APs over network cables.</p>
+                </div>
+                <div class="dashboard-card" data-topic="ipv4">
+                    <h3>IPv4 Addressing</h3>
+                    <p>IP packet headers, addressing, subnetting, and classes.</p>
+                </div>
+                <div class="dashboard-card" data-topic="arp">
+                    <h3>Address Resolution Protocol (ARP)</h3>
+                    <p>Resolving IP addresses to MAC addresses on the local network.</p>
+                </div>
+                <div class="dashboard-card" data-topic="icmp">
+                    <h3>ICMP & Troubleshooting</h3>
+                    <p>Tools like Ping, Traceroute, and common interface issues.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Course Review Page -->
+        <section id="course-review" class="page-content hidden">
+            <h2 class="text-3xl font-bold mb-6" style="color: var(--h-color);">Course Review</h2>
+            
+            <!-- Collapsible Section: Introduction to LANs -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">1. Introduction to LANs</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p>A <strong>LAN (Local Area Network)</strong> is, as the name implies, a local network. This network could be as small as two computers that are connected to each other or large, with thousands of devices connected. The keyword here is "local".</p>
+                    <p>Once you use connections for external resources, for example, an <a href="https://en.wikipedia.org/wiki/Internet" target="_blank" rel="noopener noreferrer">Internet</a> connection, we call it a <strong>WAN (Wide Area Network)</strong> connection. On our local area network, there is one dominant protocol called <strong>Ethernet</strong>.</p>
+                    
+                    <h4>SOHO LAN</h4>
+                    <p>The <strong>SOHO (Small Office Home Office)</strong> LAN is what most of are familiar with. In its most simple form, it’s only a switch and two computers:</p>
+                    
+                    <!-- SVG: SOHO LAN (2 computers, 1 switch) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                        </style>
+                        <!-- H1 -->
+                        <rect x="50" y="80" width="60" height="40" class="device computer" />
+                        <rect x="55" y="70" width="50" height="30" class="device computer" />
+                        <text x="75" y="100" class="label" text-anchor="middle">H1</text>
+                        <!-- SW1 -->
+                        <rect x="170" y="80" width="60" height="40" class="device switch" />
+                        <text x="200" y="100" class="label" text-anchor="middle">SW1</text>
+                        <path d="M175 88h10l-2 5h-6l-2-5z m15 0h10l-2 5h-6l-2-5z m-15 10h10l-2 5h-6l-2-5z m15 10h10l-2 5h-6l-2-5z" fill="#073642" />
+                        <!-- H2 -->
+                        <rect x="290" y="80" width="60" height="40" class="device computer" />
+                        <rect x="295" y="70" width="50" height="30" class="device computer" />
+                        <text x="315" y="100" class="label" text-anchor="middle">H2</text>
+                        <!-- Lines -->
+                        <line x1="110" y1="90" x2="170" y2="90" class="line" />
+                        <line x1="230" y1="90" x2="290" y2="90" class="line" />
+                    </svg>
+                    
+                    <p>For wireless connectivity, we add an <strong>Access Point (AP)</strong>. If you want to leave your LAN, you will need a <strong>router</strong>.</p>
+                    
+                    <!-- SVG: SOHO LAN + AP + Router -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 300">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                            .router { fill: #fff3cd; }
+                            .ap { fill: #f8d7da; }
+                            .cloud { fill: #e2e3e5; stroke: #586e75; stroke-dasharray: 4; }
+                        </style>
+                        <!-- Internet -->
+                        <ellipse cx="430" cy="50" rx="50" ry="25" class="cloud" />
+                        <text x="430" y="54" class="label" text-anchor="middle">Internet</text>
+                        <!-- Router -->
+                        <rect x="300" y="40" width="60" height="40" class="device router" />
+                        <text x="330" y="60" class="label" text-anchor="middle">R1</text>
+                        <line x1="360" y1="60" x2="380" y2="50" class="line" />
+                        <!-- Switch -->
+                        <rect x="170" y="120" width="60" height="40" class="device switch" />
+                        <text x="200" y="140" class="label" text-anchor="middle">SW1</text>
+                        <!-- H1 -->
+                        <rect x="50" y="120" width="60" height="40" class="device computer" />
+                        <rect x="55" y="110" width="50" height="30" class="device computer" />
+                        <text x="75" y="140" class="label" text-anchor="middle">H1</text>
+                        <!-- H2 -->
+                        <rect x="290" y="120" width="60" height="40" class="device computer" />
+                        <rect x="295" y="110" width="50" height="30" class="device computer" />
+                        <text x="315" y="140" class="label" text-anchor="middle">H2</text>
+                        <!-- AP -->
+                        <rect x="170" y="210" width="60" height="30" class="device ap" />
+                        <text x="200" y="225" class="label" text-anchor="middle">AP</text>
+                        <!-- H3 (Wireless) -->
+                        <rect x="290" y="240" width="60" height="40" class="device computer" />
+                        <rect x="295" y="230" width="50" height="30" class="device computer" />
+                        <text x="315" y="260" class="label" text-anchor="middle">H3</text>
+                        <!-- AP Waves -->
+                        <path d="M235 225 q 20 -15 40 0" stroke="#002b36" stroke-width="2" fill="none" stroke-linecap="round" />
+                        <path d="M230 220 q 30 -20 60 0" stroke="#002b36" stroke-width="2" fill="none" stroke-linecap="round" />
+                        <path d="M225 215 q 40 -25 80 0" stroke="#002b36" stroke-width="2" fill="none" stroke-linecap="round" />
+                        <!-- Lines -->
+                        <line x1="300" y1="60" x2="200" y2="120" class="line" />
+                        <line x1="110" y1="130" x2="170" y2="130" class="line" />
+                        <line x1="230" y1="130" x2="290" y2="130" class="line" />
+                        <line x1="200" y1="160" x2="200" y2="210" class="line" />
+                    </svg>
+
+                    <h4>Enterprise LAN</h4>
+                    <p>Enterprises use the same technology but on a larger scale. A building might have a switch on each floor connected to a central <strong>Core switch</strong>.</p>
+                    
+                    <!-- SVG: Enterprise LAN (1 building) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .floor { fill-opacity: 0.1; stroke: #002b36; stroke-width: 1; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                            .core { fill: #ffc; border: 2px solid #b58900; }
+                            .ap { fill: #f8d7da; }
+                        </style>
+                        <!-- Floors -->
+                        <rect x="10" y="10" width="480" height="120" class="floor" fill="#f8d7da" />
+                        <text x="450" y="30" class="label">3rd Floor</text>
+                        <rect x="10" y="130" width="480" height="120" class="floor" fill="#d1e7dd" />
+                        <text x="450" y="150" class="label">2nd Floor</text>
+                        <rect x="10" y="250" width="480" height="120" class="floor" fill="#cce5ff" />
+                        <text x="450" y="270" class="label">1st Floor</text>
+                        <!-- Core -->
+                        <rect x="300" y="300" width="60" height="40" class="device core" />
+                        <text x="330" y="320" class="label" text-anchor="middle">Core</text>
+                        <!-- 3rd Floor -->
+                        <rect x="180" y="60" width="60" height="40" class="device switch" />
+                        <text x="210" y="80" class="label" text-anchor="middle">SW3</text>
+                        <rect x="50" y="60" width="60" height="40" class="device computer" />
+                        <rect x="55" y="50" width="50" height="30" class="device computer" />
+                        <text x="75" y="80" class="label" text-anchor="middle">H3</text>
+                        <rect x="50" y="20" width="60" height="30" class="device ap" />
+                        <text x="80" y="35" class="label" text-anchor="middle">AP</text>
+                        <line x1="110" y1="70" x2="180" y2="70" class="line" />
+                        <line x1="80" y1="50" x2="180" y2="60" class="line" />
+                        <line x1="240" y1="80" x2="300" y2="320" class="line" />
+                        <!-- 2nd Floor -->
+                        <rect x="180" y="180" width="60" height="40" class="device switch" />
+                        <text x="210" y="200" class="label" text-anchor="middle">SW2</text>
+                        <rect x="50" y="180" width="60" height="40" class="device computer" />
+                        <rect x="55" y="170" width="50" height="30" class="device computer" />
+                        <text x="75" y="200" class="label" text-anchor="middle">H2</text>
+                        <rect x="50" y="140" width="60" height="30" class="device ap" />
+                        <text x="80" y="155" class="label" text-anchor="middle">AP</text>
+                        <line x1="110" y1="190" x2="180" y2="190" class="line" />
+                        <line x1="80" y1="170" x2="180" y2="180" class="line" />
+                        <line x1="240" y1="200" x2="310" y2="320" class="line" />
+                        <!-- 1st Floor -->
+                        <rect x="180" y="300" width="60" height="40" class="device switch" />
+                        <text x="210" y="320" class="label" text-anchor="middle">SW1</text>
+                        <rect x="50" y="300" width="60" height="40" class="device computer" />
+                        <rect x="55" y="290" width="50" height="30" class="device computer" />
+                        <text x="75" y="320" class="label" text-anchor="middle">H1</text>
+                        <rect x="50" y="260" width="60" height="30" class="device ap" />
+                        <text x="80" y="275" class="label" text-anchor="middle">AP</text>
+                        <line x1="110" y1="310" x2="180" y2="310" class="line" />
+                        <line x1="80" y1="290" x2="180" y2="300" class="line" />
+                        <line x1="240" y1="320" x2="300" y2="320" class="line" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: Introduction to Ethernet -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">2. Introduction to Ethernet (802.3)</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p>Ethernet is a collection of standards from the IEEE (starting with 802.3). It defines the <strong>Physical Layer (Layer 1)</strong> and <strong>Data Link Layer (Layer 2)</strong>.</p>
+                    
+                    <h4>Physical Layer (Layer 1)</h4>
+                    <p>This layer deals with cabling and signaling.</p>
+                    <ul>
+                        <li><strong>UTP (Unshielded Twisted Pair):</strong> Cheap, easy to work with, max 100 meters. Uses copper wires to send electrical signals.</li>
+                        <li><strong>Fiber Cabling:</strong> Uses glass or plastic to transmit light. Allows for much longer distances (kilometers) and is immune to EMI.</li>
+                    </ul>
+                    
+                    <h4>UTP Cabling</h4>
+                    <p>10BASE-T and 100BASE-T use two wire pairs (one to transmit, one to receive). 1000BASE-T (Gigabit) uses all four pairs simultaneously.</p>
+                    <ul>
+                        <li><strong>Straight-Through Cable:</strong> Connects unlike devices (e.g., PC to Switch). Pins are 1-to-1, 2-to-2, 3-to-3, 6-to-6.</li>
+                        <!-- SVG: Straight-through -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 150">
+                             <style>
+                                .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                                .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                                .computer { fill: #d1e7dd; }
+                                .switch { fill: #cce5ff; }
+                                .rj45 { fill: #e0e0e0; stroke: #586e75; }
+                                .pin { stroke: #002b36; stroke-width: 1; }
+                                .o { stroke: #cb4b16; } .ow { stroke: #cb4b16; stroke-dasharray: 2; }
+                                .g { stroke: #859900; } .gw { stroke: #859900; stroke-dasharray: 2; }
+                            </style>
+                            <rect x="20" y="40" width="60" height="40" class="device computer" /><rect x="25" y="30" width="50" height="30" class="device computer" /><text x="45" y="60" class="label" text-anchor="middle">PC</text>
+                            <rect x="370" y="40" width="60" height="40" class="device switch" /><text x="400" y="60" class="label" text-anchor="middle">SW</text>
+                            <rect x="80" y="35" width="40" height="50" class="rj45" /><rect x="330" y="35" width="40" height="50" class="rj45" />
+                            <text x="100" y="25" class="label" text-anchor="middle">TX (1,2)</text><text x="100" y="105" class="label" text-anchor="middle">RX (3,6)</text>
+                            <text x="350" y="25" class="label" text-anchor="middle">RX (1,2)</text><text x="350" y="105" class="label" text-anchor="middle">TX (3,6)</text>
+                            <!-- Pins -->
+                            <line x1="120" y1="40" x2="330" y2="40" class="pin ow" />
+                            <line x1="120" y1="45" x2="330" y2="45" class="pin o" />
+                            <line x1="120" y1="50" x2="330" y2="50" class="pin gw" />
+                            <line x1="120" y1="70" x2="330" y2="70" class="pin g" />
+                            <text x="225" y="35" class="label" fill="#cb4b16">Transmit</text><path d="M120 42.5 h30 l5 -5 v-5" stroke="#cb4b16" fill="none" /><path d="M330 42.5 h-30 l-5 -5 v-5" stroke="#cb4b16" fill="none" />
+                            <text x="225" y="80" class="label" fill="#859900">Receive</text><path d="M120 60 v10 l5 5 h30" stroke="#859900" fill="none" /><path d="M330 60 v10 l-5 5 h-30" stroke="#859900" fill="none" />
+                        </svg>
+                        <li><strong>Crossover Cable:</strong> Connects like devices (e.g., Switch to Switch, PC to PC). Transmit and receive pairs are swapped. Pins 1->3, 2->6, 3->1, 6->2.</li>
+                        <!-- SVG: Crossover -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 150">
+                             <style>
+                                .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                                .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                                .switch { fill: #cce5ff; }
+                                .rj45 { fill: #e0e0e0; stroke: #586e75; }
+                                .pin { stroke: #002b36; stroke-width: 1; }
+                                .o { stroke: #cb4b16; } .ow { stroke: #cb4b16; stroke-dasharray: 2; }
+                                .g { stroke: #859900; } .gw { stroke: #859900; stroke-dasharray: 2; }
+                            </style>
+                            <rect x="20" y="40" width="60" height="40" class="device switch" /><text x="45" y="60" class="label" text-anchor="middle">SW1</text>
+                            <rect x="370" y="40" width="60" height="40" class="device switch" /><text x="400" y="60" class="label" text-anchor="middle">SW2</text>
+                            <rect x="80" y="35" width="40" height="50" class="rj45" /><rect x="330" y="35" width="40" height="50" class="rj45" />
+                            <text x="100" y="25" class="label" text-anchor="middle">RX (1,2)</text><text x="100" y="105" class="label" text-anchor="middle">TX (3,6)</text>
+                            <text x="350" y="25" class="label" text-anchor="middle">RX (1,2)</text><text x="350" y="105" class="label" text-anchor="middle">TX (3,6)</text>
+                            <!-- Pins -->
+                            <line x1="120" y1="40" x2="330" y2="50" class="pin ow" />
+                            <line x1="120" y1="45" x2="330" y2="70" class="pin o" />
+                            <line x1="120" y1="50" x2="330" y2="40" class="pin gw" />
+                            <line x1="120" y1="70" x2="330" y2="45" class="pin g" />
+                        </svg>
+                        <li><strong>Auto-MDIX:</strong> A modern feature where the port automatically detects the cable type and swaps its pins if needed. This makes straight-through/crossover cables largely obsolete.</li>
+                    </ul>
+                    
+                    <h4>Duplex</h4>
+                    <ul>
+                        <li><strong>Half-Duplex:</strong> Cannot send and receive at the same time. Used by old hubs. Requires <strong>CSMA/CD (Carrier Sense Multiple Access with Collision Detection)</strong> to manage collisions.</li>
+                        <li><strong>Full-Duplex:</strong> Can send and receive simultaneously. Used by switches. No collisions are possible, so CSMA/CD is disabled.</li>
+                    </ul>
+
+                    <h4>Data Link Layer (Layer 2)</h4>
+                    <p>This layer defines the Ethernet frame and addressing.</p>
+                    
+                    <!-- SVG: Ethernet Frame -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 100">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; text-anchor: middle; }
+                            .header { fill: #2aa198; stroke: #002b36; }
+                            .data { fill: #268bd2; stroke: #002b36; }
+                            .fcs { fill: #dc322f; stroke: #002b36; }
+                            .text { fill: #fdf6e3; font-weight: 600; } /* Changed text color to light */
+                            .subtext { fill: #073642; font-size: 9px; } /* Darker subtext */
+                        </style>
+                        <rect x="10" y="30" width="70" height="40" class="header" /><text x="45" y="55" class="text label">Preamble</text><text x="45" y="80" class="label subtext">7 Bytes</text>
+                        <rect x="80" y="30" width="40" height="40" class="header" /><text x="100" y="55" class="text label">SFD</text><text x="100" y="80" class="label subtext">1 Byte</text>
+                        <rect x="120" y="30" width="80" height="40" class="header" /><text x="160" y="55" class="text label">Destination</text><text x="160" y="80" class="label subtext">6 Bytes</text>
+                        <rect x="200" y="30" width="80" height="40" class="header" /><text x="240" y="55" class="text label">Source</text><text x="240" y="80" class="label subtext">6 Bytes</text>
+                        <rect x="280" y="30" width="50" height="40" class="header" /><text x="305" y="55" class="text label">Type</text><text x="305" y="80" class="label subtext">2 Bytes</text>
+                        <rect x="330" y="30" width="200" height="40" class="data" /><text x="430" y="55" class="text label">Data</text><text x="430" y="80" class="label subtext">46-1500 Bytes</text>
+                        <rect x="530" y="30" width="50" height="40" class="fcs" /><text x="555" y="55" class="text label">FCS</text><text x="555" y="80" class="label subtext">4 Bytes</text>
+                    </svg>
+
+                    <ul>
+                        <li><strong>MAC Addresses:</strong> A 48-bit (6-byte) unique, hard-coded address on every network card. Written in hexadecimal (e.g., <code>00:0C:29:63:AF:D0</code>).
+                            <ul>
+                                <li>The first 24 bits are the <strong>OUI (Organizationally Unique Identifier)</strong>, assigned to a vendor (e.g., <code>00:0C:29</code> is VMware).</li>
+                                <li>The last 24 bits are assigned by the vendor.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Type Field:</strong> Identifies the protocol inside the frame (e.g., <code>0x0800</code> for IPv4, <code>0x0806</code> for ARP).</li>
+                        <li><strong>FCS (Frame Check Sequence):</strong> A checksum used by the receiver to detect if the frame was corrupted in transit. Corrupt frames are discarded.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: Collision & Broadcast Domains -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">3. Collision & Broadcast Domains</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <h4>Collision Domain</h4>
+                    <p>A <strong>Collision Domain</strong> is a segment of a network where two or more devices sending data at the same time would cause a collision. </p>
+                    <ul>
+                        <li><strong>Hubs:</strong> A hub is a simple repeater. It regenerates a signal and sends it out all other ports. All devices connected to a hub are in the <strong>same collision domain</strong>.</li>
+                    </ul>
+                    <!-- SVG: Hub Collision -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .hub { fill: #f8d7da; }
+                            .frame { fill: #268bd2; stroke: #002b36; }
+                            .text { font-size: 9px; fill: white; } /* White text for frame */
+                            .red { fill: #dc322f; }
+                            .explode { stroke: #dc322f; stroke-width: 2; fill: #cb4b16; }
+                        </style>
+                        <rect x="50" y="50" width="60" height="40" class="device computer" /><rect x="55" y="40" width="50" height="30" class="device computer" /><text x="75" y="70" class="label" text-anchor="middle">H1</text>
+                        <rect x="50" y="160" width="60" height="40" class="device computer" /><rect x="55" y="150" width="50" height="30" class="device computer" /><text x="75" y="180" class="label" text-anchor="middle">H2</text>
+                        <rect x="170" y="105" width="60" height="40" class="device hub" /><text x="200" y="125" class="label" text-anchor="middle">Hub</text>
+                        <rect x="290" y="105" width="60" height="40" class="device computer" /><rect x="295" y="95" width="50" height="30" class="device computer" /><text x="315" y="125" class="label" text-anchor="middle">H3</text>
+                        <line x1="110" y1="60" x2="170" y2="115" class="line" />
+                        <line x1="110" y1="170" x2="170" y2="135" class="line" />
+                        <line x1="230" y1="125" x2="290" y2="125" class="line" />
+                        <!-- Frames -->
+                        <rect x="120" y="65" width="30" height="15" class="frame" /><text x="135" y="75" class="text" text-anchor="middle">Frame</text>
+                        <rect x="120" y="170" width="30" height="15" class="frame" /><text x="135" y="180" class="text" text-anchor="middle">Frame</text>
+                        <rect x="240" y="100" width="30" height="15" class="frame" />
+                        <rect x="240" y="115" width="30" height="15" class="frame" />
+                        <!-- Collision -->
+                        <circle cx="270" cy="113" r="15" class="red" />
+                        <path d="m260 103 20 20 m0-20-20 20" class="explode" />
+                        <text x="270" y="145" class="label red" text-anchor="middle">CRASH!</text>
+                    </svg>
+                    <ul>
+                        <li><strong>Switches:</strong> A switch is intelligent. It learns MAC addresses and forwards frames only where they need to go. Each port on a switch is its <strong>own separate collision domain</strong>. This is why switches replaced hubs.</li>
+                    </ul>
+                    <!-- SVG: Switch Collision Domains -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                            .domain { fill-opacity: 0.1; stroke: #586e75; stroke-dasharray: 4; rx: 10; }
+                        </style>
+                        <rect x="170" y="130" width="60" height="40" class="device switch" /><text x="200" y="150" class="label" text-anchor="middle">SW1</text>
+                        <!-- H1 -->
+                        <rect x="40" y="40" width="60" height="40" class="device computer" /><rect x="45" y="30" width="50" height="30" class="device computer" /><text x="65" y="60" class="label" text-anchor="middle">H1</text>
+                        <rect x="20" y="20" width="100" height="80" class="domain" fill="#f8d7da" /><text x="70" y="110" class="label">Domain #1</text>
+                        <line x1="70" y1="80" x2="170" y2="140" class="line" />
+                        <!-- H2 -->
+                        <rect x="290" y="40" width="60" height="40" class="device computer" /><rect x="295" y="30" width="50" height="30" class="device computer" /><text x="315" y="60" class="label" text-anchor="middle">H2</text>
+                        <rect x="270" y="20" width="100" height="80" class="domain" fill="#d1e7dd" /><text x="320" y="110" class="label">Domain #2</text>
+                        <line x1="320" y1="80" x2="230" y2="140" class="line" />
+                        <!-- H3 -->
+                        <rect x="40" y="210" width="60" height="40" class="device computer" /><rect x="45" y="200" width="50" height="30" class="device computer" /><text x="65" y="230" class="label" text-anchor="middle">H3</text>
+                        <rect x="20" y="190" width="100" height="80" class="domain" fill="#cce5ff" /><text x="70" y="280" class="label">Domain #3</text>
+                        <line x1="70" y1="210" x2="170" y2="160" class="line" />
+                        <!-- H4 -->
+                        <rect x="290" y="210" width="60" height="40" class="device computer" /><rect x="295" y="200" width="50" height="30" class="device computer" /><text x="315" y="230" class="label" text-anchor="middle">H4</text>
+                        <rect x="270" y="190" width="100" height="80" class="domain" fill="#fff3cd" /><text x="320" y="280" class="label">Domain #4</text>
+                        <line x1="320" y1="210" x2="230" y2="160" class="line" />
+                    </svg>
+                    
+                    <h4>Broadcast Domain</h4>
+                    <p>A <strong>Broadcast Domain</strong> is a collection of devices that will receive a broadcast frame (destination MAC <code>FF:FF:FF:FF:FF:FF</code>) sent by any other device in the same collection.</p>
+                    <ul>
+                        <li><strong>Switches:</strong> By default, all ports on a switch are in the <strong>same broadcast domain</strong>. A switch will flood broadcasts out all ports (except the one it came in on).</li>
+                        <li><strong>Routers:</strong> Routers (Layer 3 devices) <strong>do not forward broadcasts</strong>. They are used to separate broadcast domains.</li>
+                        <li><strong>VLANs (Virtual LANs):</strong> VLANs are a way to make one physical switch act like multiple virtual switches. Each VLAN is a <strong>separate broadcast domain</strong>.</li>
+                    </ul>
+                     <!-- SVG: Router stops Broadcast -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                            .router { fill: #fff3cd; }
+                            .domain { fill-opacity: 0.1; stroke: #586e75; stroke-dasharray: 4; rx: 10; }
+                        </style>
+                        <!-- Router -->
+                        <rect x="170" y="50" width="60" height="40" class="device router" /><text x="200" y="70" class="label" text-anchor="middle">R1</text>
+                        <!-- Domain 1 -->
+                        <rect x="20" y="20" width="100" height="100" class="domain" fill="#f8d7da" /><text x="70" y="130" class="label">Domain #1</text>
+                        <rect x="40" y="50" width="60" height="40" class="device computer" /><rect x="45" y="40" width="50" height="30" class="device computer" /><text x="65" y="70" class="label" text-anchor="middle">H1</text>
+                        <line x1="100" y1="70" x2="170" y2="70" class="line" />
+                        <!-- Domain 2 -->
+                        <rect x="20" y="160" width="180" height="120" class="domain" fill="#cce5ff" /><text x="110" y="290" class="label">Domain #2</text>
+                        <rect x="40" y="200" width="60" height="40" class="device computer" /><rect x="45" y="190" width="50" height="30" class="device computer" /><text x="65" y="220" class="label" text-anchor="middle">H2</text>
+                        <rect x="130" y="200" width="60" height="40" class="device switch" /><text x="160" y="220" class="label" text-anchor="middle">SW2</text>
+                        <line x1="100" y1="220" x2="130" y2="220" class="line" />
+                        <line x1="160" y1="200" x2="180" y2="90" class="line" />
+                        <!-- Domain 3 -->
+                        <rect x="260" y="100" width="120" height="180" class="domain" fill="#d1e7dd" /><text x="320" y="290" class="label">Domain #3</text>
+                        <rect x="280" y="200" width="60" height="40" class="device computer" /><rect x="285" y="190" width="50" height="30" class="device computer" /><text x="305" y="220" class="label" text-anchor="middle">H3</text>
+                        <rect x="280" y="130" width="60" height="40" class="device switch" /><text x="310" y="150" class="label" text-anchor="middle">SW3</text>
+                        <line x1="310" y1="170" x2="310" y2="200" class="line" />
+                        <line x1="280" y1="150" x2="230" y2="80" classs="line" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: How a Switch Learns MACs -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">4. How a Switch Learns MAC Addresses</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p>A switch builds a <strong>MAC Address Table</strong> (or CAM table) to make intelligent forwarding decisions. This process has two key parts: learning and forwarding.</p>
+                    
+                    <h4>1. Learning (Building the Table)</h4>
+                    <ul>
+                        <li>When a frame enters a switch port, the switch looks at the <strong>source MAC address</strong>.</li>
+                        <li>It adds this MAC address to its table, associating it with the port the frame came in on.</li>
+                        <li>This is how the switch learns where devices are.</li>
+                    </ul>
+
+                    <h4>2. Forwarding (Making a Decision)</h4>
+                    <p>When a frame enters, after learning the source MAC, the switch looks at the <strong>destination MAC address</strong>.</p>
+                    <ul>
+                        <li><strong>Known Destination:</strong> If the destination MAC is in the table, the switch forwards the frame <em>only</em> out the port listed in the table. This is called <strong>forwarding</strong>.</li>
+                        <li><strong>Unknown Destination:</strong> If the destination MAC is <em>not</em> in the table (or is the broadcast address <code>FF:FF:FF:FF:FF:FF</code>), the switch forwards the frame out <em>all other ports</em>. This is called <strong>flooding</strong>.</li>
+                    </ul>
+                    
+                    <p><strong>Example:</strong> H1 (AAA) sends a frame to H2 (BBB). The switch's table is empty.</p>
+                    <!-- SVG: Switch Learning Process -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                            .frame { fill: #268bd2; stroke: #002b36; }
+                            .text { font-size: 9px; fill: white; } /* White text for frame */
+                            .table { font-size: 10px; font-family: 'Courier New', Courier, monospace; fill: #073642; }
+                            .arrow { stroke: #dc322f; stroke-width: 2.5; marker-end: url(#arrowhead); }
+                        </style>
+                        <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc322f"/></marker></defs>
+                        <!-- Devices -->
+                        <rect x="50" y="50" width="60" height="40" class="device computer" /><rect x="55" y="40" width="50" height="30" class="device computer" /><text x="75" y="70" class="label" text-anchor="middle">H1</text><text x="75" y="100" class="label" text-anchor="middle">MAC: AAA</text>
+                        <rect x="220" y="50" width="60" height="40" class="device switch" /><text x="250" y="70" class="label" text-anchor="middle">SW1</text>
+                        <text x="175" y="65" class="label">Port 1</text><text x="315" y="65" class="label">Port 2</text><text x="245" y="100" class="label">Port 3</text>
+                        <rect x="390" y="50" width="60" height="40" class="device computer" /><rect x="395" y="40" width="50" height="30" class="device computer" /><text x="415" y="70" class="label" text-anchor="middle">H2</text><text x="415" y="100" class="label" text-anchor="middle">MAC: BBB</text>
+                        <rect x="220" y="250" width="60" height="40" class="device computer" /><rect x="225" y="240" width="50" height="30" class="device computer" /><text x="245" y="270" class="label" text-anchor="middle">H3</text><text x="245" y="300" class="label" text-anchor="middle">MAC: CCC</text>
+                        <!-- Lines -->
+                        <line x1="110" y1="60" x2="220" y2="60" class="line" />
+                        <line x1="280" y1="60" x2="390" y2="60" class="line" />
+                        <line x1="250" y1="90" x2="250" y2="240" class="line" />
+                        
+                        <!-- Step 1: H1 sends frame -->
+                        <g id="step1">
+                            <text x="50" y="130" class="label" font-weight="bold">Step 1: H1 sends to H2</text>
+                            <rect x="120" y="35" width="80" height="25" class="frame" />
+                            <text x="160" y="50" class="text" text-anchor="middle">S: AAA | D: BBB</text>
+                            <path d="M115 50 h60" class="arrow" />
+                            <rect x="50" y="150" width="130" height="60" class="device" fill="#fff3cd" />
+                            <text x="115" y="165" class="table" text-anchor="middle">MAC Table (Before)</text>
+                            <text x="60" y="185" class="table">Port</text><text x="110" y="185" class="table">MAC</text>
+                            <text x="60" y="200" class="table">1:</text>
+                            <text x="60" y="210" class="table">2:</text>
+                            <text x="60" y="220" class="table">3:</text>
+                        </g>
+                        
+                        <!-- Step 2: Switch learns and floods -->
+                        <g id="step2" transform="translate(0, 100)">
+                            <text x="280" y="100" class="label" font-weight="bold">Step 2: Switch learns AAA on Port 1, floods frame</text>
+                            <path d="M285 60 h60" class="arrow" />
+                            <path d="M250 95 v60" class="arrow" />
+                            <rect x="300" y="150" width="130" height="70" class="device" fill="#fff3cd" />
+                            <text x="365" y="165" class="table" text-anchor="middle">MAC Table (After)</text>
+                            <text x="310" y="185" class="table">Port</text><text x="360" y="185" class="table">MAC</text>
+                            <text x="310" y="200" class="table">1: <tspan fill="#dc322f">AAA</tspan></text>
+                            <text x="310" y="210" class="table">2:</text>
+                            <text x="310" y="220" class="table">3:</text>
+                        </g>
+                    </svg>
+                    <p>When H2 (BBB) replies to H1 (AAA), the switch will receive the frame on Port 2. It will learn BBB is on Port 2. Since AAA is already in its table, it will <strong>forward</strong> the reply only out Port 1.</p>
+                </div>
+            </div>
+            
+            <!-- Collapsible Section: Power over Ethernet (PoE) -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">5. Power over Ethernet (PoE)</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Power over Ethernet (PoE)</strong> is a technology used to power devices (like VoIP phones, IP cameras, and wireless APs) through the same Ethernet cable that provides data.</p>
+                    <p>A device providing power is <strong>PSE (Power Sourcing Equipment)</strong>. A device receiving power is a <strong>PD (Powered Device)</strong>.</p>
+                    
+                    <h4>Endspan vs. Midspan</h4>
+                    <ul>
+                        <li><strong>Endspan:</strong> The PoE is integrated directly into the network switch (a "PoE switch"). This is the most common method.</li>
+                        <!-- SVG: Endspan -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200">
+                            <style>
+                                .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                                .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                                .line { stroke: #002b36; stroke-width: 2; }
+                                .data-power { stroke: #cb4b16; stroke-dasharray: 5 2; }
+                                .switch { fill: #cce5ff; }
+                                .pd { fill: #f8d7da; }
+                                .power { fill: #dc322f; stroke: #dc322f;}
+                                .power-label { fill: #dc322f;}
+                            </style>
+                            <text x="20" y="20" class="label" font-weight="bold">Endspan (PoE Switch)</text>
+                            <rect x="100" y="80" width="150" height="40" class="device switch" />
+                            <text x="175" y="100" class="label" text-anchor="middle">PoE Switch</text>
+                            <rect x="300" y="40" width="60" height="30" class="device pd" /><text x="330" y="60" class="label" text-anchor="middle">AP</text>
+                            <rect x="300" y="90" width="60" height="30" class="device pd" /><text x="330" y="110" class="label" text-anchor="middle">IP Camera</text>
+                            <rect x="300" y="140" width="60" height="30" class="device pd" /><text x="330" y="160" class="label" text-anchor="middle">VoIP Phone</text>
+                            <!-- Power -->
+                            <rect x="250" y="85" width="10" height="10" class="power" />
+                            <line x1="255" y1="85" x2="255" y2="40" class="power" /><line x1="245" y1="40" x2="265" y2="40" class="power" /><text x="270" y="45" class="label power-label">Power</text>
+                            <!-- Lines -->
+                            <line x1="200" y1="80" x2="200" y2="55" class="line" /><line x1="200" y1="55" x2="300" y2="55" class="line data-power" />
+                            <line x1="200" y1="120" x2="200" y2="105" class="line" /><line x1="200" y1="105" x2="300" y2="105" class="line data-power" />
+                            <line x1="200" y1="120" x2="200" y2="155" class="line" /><line x1="200" y1="155" x2="300" y2="155" class="line data-power" />
+                            <text x="250" y="50" class="label" fill="#cb4b16">Data + Power</text>
+                        </svg>
+                        
+                        <li><strong>Midspan:</strong> A <strong>PoE injector</strong> is placed "in the middle" between a regular, non-PoE switch and the end device.</li>
+                        <!-- SVG: Midspan -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 250">
+                            <style>
+                                .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                                .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                                .line { stroke: #002b36; stroke-width: 2; }
+                                .data-power { stroke: #cb4b16; stroke-dasharray: 5 2; }
+                                .switch { fill: #cce5ff; }
+                                .pd { fill: #f8d7da; }
+                                .mid { fill: #fff3cd; }
+                                .power { fill: #dc322f; stroke: #dc322f; }
+                                .power-label { fill: #dc322f; }
+                            </style>
+                            <text x="20" y="20" class="label" font-weight="bold">Midspan (PoE Injector)</text>
+                            <rect x="50" y="100" width="100" height="40" class="device switch" /><text x="100" y="120" class="label" text-anchor="middle">Regular Switch</text>
+                            <rect x="200" y="100" width="100" height="40" class="device mid" /><text x="250" y="120" class="label" text-anchor="middle">Midspan Injector</text>
+                            <rect x="390" y="100" width="60" height="40" class="device pd" /><text x="420" y="120" class="label" text-anchor="middle">AP</text>
+                            <!-- Power -->
+                            <rect x="245" y="145" width="10" height="10" class="power" />
+                            <line x1="250" y1="155" x2="250" y2="200" class="power" /><line x1="240" y1="200" x2="260" y2="200" class="power" /><text x="265" y="205" class="label power-label">Power</text>
+                            <!-- Lines -->
+                            <line x1="150" y1="120" x2="200" y2="120" class="line" /><text x="175" y="115" class="label">Data Only</text>
+                            <line x1="300" y1="120" x2="390" y2="120" class="line data-power" /><text x="345" y="115" class="label" fill="#cb4b16">Data + Power</text>
+                        </svg>
+                    </ul>
+                    
+                    <h4>PoE Standards (Types)</h4>
+                    <ul>
+                        <li><strong>Type 1 (802.3af - "PoE"):</strong> Provides up to 15.4W of power. (Guarantees 12.95W at the device).</li>
+                        <li><strong>Type 2 (802.3at - "PoE+"):</strong> Provides up to 30W of power. (Guarantees 25.5W at the device).</li>
+                        <li><strong>Type 3 (802.3bt - "PoE++" / 4PPoE):</strong> Provides up to 60W of power.</li>
+                        <li><strong>Type 4 (802.3bt - "PoE++"):</strong> Provides up to 99W (or 100W) of power.</li>
+                    </ul>
+                    <p>The PSE and PD negotiate the power level using <strong>Classes</strong> (Class 0 to 8) to determine how much power the PD needs. This prevents a high-power PSE from damaging a low-power PD.</p>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: Network Topologies -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">6. Network Topologies</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p>Network Topology refers to the physical or logical layout of a network.</p>
+                    
+                    <h4>Star Topology</h4>
+                    <p>All devices connect to a central device, like a switch. This is the most common LAN topology. A failure in the central device takes down the network.</p>
+                    <!-- SVG: Star Topology -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #f0f0f0; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #002b36; stroke-width: 2; }
+                            .computer { fill: #d1e7dd; }
+                            .switch { fill: #cce5ff; }
+                        </style>
+                        <rect x="120" y="120" width="60" height="40" class="device switch" /><text x="150" y="140" class="label" text-anchor="middle">SW1</text>
+                        <!-- Hosts -->
+                        <rect x="120" y="20" width="60" height="40" class="device computer" /><text x="150" y="40" class="label" text-anchor="middle">H1</text>
+                        <rect x="220" y="120" width="60" height="40" class="device computer" /><text x="250" y="140" class="label" text-anchor="middle">H2</text>
+                        <rect x="120" y="220" width="60" height="40" class="device computer" /><text x="150" y="240" class="label" text-anchor="middle">H3</text>
+                        <rect x="20" y="120" width="60" height="40" class="device computer" /><text x="50" y="140" class="label" text-anchor="middle">H4</text>
+                        <!-- Lines -->
+                        <line x1="150" y1="120" x2="150" y2="60" class="line" />
+                        <line x1="180" y1="140" x2="220" y2="140" class="line" />
+                        <line x1="150" y1="160" x2="150" y2="220" class="line" />
+                        <line x1="120" y1="140" x2="80" y2="140" class="line" />
+                    </svg>
+
+                    <h4>Full Mesh Topology</h4>
+                    <p>Every device is connected to every other device. Provides maximum redundancy but is very expensive and complex to cable. Often used in WANs between critical routers.</p>
+                    <!-- SVG: Full Mesh -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #fff3cd; stroke: #002b36; stroke-width: 1.5; } /* Changed rx to default circle */
+                            .line { stroke: #586e75; stroke-width: 2; }
+                        </style>
+                        <circle cx="150" cy="50" r="20" class="device" /><text x="150" y="54" class="label" text-anchor="middle">R1</text>
+                        <circle cx="250" cy="120" r="20" class="device" /><text x="250" y="124" class="label" text-anchor="middle">R2</text>
+                        <circle cx="220" cy="250" r="20" class="device" /><text x="220" y="254" class="label" text-anchor="middle">R3</text>
+                        <circle cx="80" cy="250" r="20" class="device" /><text x="80" y="254" class="label" text-anchor="middle">R4</text>
+                        <circle cx="50" cy="120" r="20" class="device" /><text x="50" y="124" class="label" text-anchor="middle">R5</text>
+                        <!-- Lines -->
+                        <line x1="150" y1="50" x2="250" y2="120" class="line" />
+                        <line x1="150" y1="50" x2="220" y2="250" class="line" />
+                        <line x1="150" y1="50" x2="80" y2="250" class="line" />
+                        <line x1="150" y1="50" x2="50" y2="120" class="line" />
+                        <line x1="250" y1="120" x2="220" y2="250" class="line" />
+                        <line x1="250" y1="120" x2="80" y2="250" class="line" />
+                        <line x1="250" y1="120" x2="50" y2="120" class="line" />
+                        <line x1="220" y1="250" x2="80" y2="250" class="line" />
+                        <line x1="220" y1="250" x2="50" y2="120" class="line" />
+                        <line x1="80" y1="250" x2="50" y2="120" class="line" />
+                    </svg>
+
+                    <h4>Partial Mesh Topology</h4>
+                    <p>A compromise. Only critical devices are fully meshed, or some devices are connected to multiple, but not all, other devices. Balances cost and redundancy.</p>
+
+                    <h4>Hub and Spoke Topology</h4>
+                    <p>A central "Hub" device (like a main office router) connects to multiple "Spoke" devices (like branch office routers). All communication between spokes must go through the hub. Simple and cheap, but the hub is a single point of failure.</p>
+                    <!-- SVG: Hub and Spoke -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #fff3cd; stroke: #002b36; stroke-width: 1.5; } /* Changed rx to default circle */
+                            .line { stroke: #586e75; stroke-width: 2; }
+                            .cloud { fill: #e2e3e5; stroke: #586e75; stroke-dasharray: 4; }
+                        </style>
+                        <text x="50" y="30" class="label" font-weight="bold">Hub</text>
+                        <circle cx="50" cy="120" r="20" class="device" /><text x="50" y="124" class="label" text-anchor="middle">R1</text>
+                        <ellipse cx="200" cy="120" rx="60" ry="30" class="cloud" />
+                        <text x="350" y="30" class="label" font-weight="bold">Spokes</text>
+                        <circle cx="350" cy="50" r="20" class="device" /><text x="350" y="54" class="label" text-anchor="middle">R2</text>
+                        <circle cx="350" cy="120" r="20" class="device" /><text x="350" y="124" class="label" text-anchor="middle">R3</text>
+                        <circle cx="350" cy="190" r="20" class="device" /><text x="350" y="194" class="label" text-anchor="middle">R4</text>
+                        <!-- Lines -->
+                        <line x1="70" y1="120" x2="140" y2="120" class="line" />
+                        <line x1="260" y1="110" x2="330" y2="50" class="line" />
+                        <line x1="260" y1="120" x2="330" y2="120" class="line" />
+                        <line x1="260" y1="130" x2="330" y2="190" class="line" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: Introduction to IPv4 -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">7. Introduction to IPv4</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>IP (Internet Protocol)</strong> is a <strong>connectionless</strong> protocol that operates at the Network Layer (Layer 3). It's responsible for logical addressing and routing packets.</p>
+                    
+                    <h4>IPv4 Address Structure</h4>
+                    <p>An IPv4 address is a 32-bit number, commonly written as four 8-bit numbers (octets) in "dotted decimal" notation (e.g., <code>192.168.1.1</code>).</p>
+                    <p>It has two parts:</p>
+                    <ul>
+                        <li><strong>Network Part:</strong> Identifies the network the device is on.</li>
+                        <li><strong>Host Part:</strong> Identifies the specific device on that network.</li>
+                    </ul>
+                    <p>The <strong>Subnet Mask</strong> (e.g., <code>255.255.255.0</code>) is used to determine which part is which. A <code>255</code> (or binary <code>11111111</code>) means "this part is the network." A <code>0</code> (or binary <code>00000000</code>) means "this part is for hosts."</p>
+                    <p>Example: <code>192.168.1.1</code> with subnet mask <code>255.255.255.0</code></p>
+                    <ul>
+                        <li><strong>Network:</strong> 192.168.1</li>
+                        <li><strong>Host:</strong> 1</li>
+                    </ul>
+
+                    <h4>IPv4 Packet Header</h4>
+                    <p>The IP header contains control information. Key fields include:</p>
+                    <!-- SVG: IPv4 Header -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; text-anchor: middle; }
+                            .box { stroke: #002b36; stroke-width: 1; fill: #f0f0f0; }
+                            .text { font-size: 9px; text-anchor: middle; fill: #073642; } /* Dark text */
+                        </style>
+                        <rect x="10" y="10" width="50" height="25" class="box" fill="#eee8d5" /><text x="35" y="27" class="text">Version</text>
+                        <rect x="60" y="10" width="50" height="25" class="box" fill="#eee8d5" /><text x="85" y="27" class="text">IHL</text>
+                        <rect x="110" y="10" width="80" height="25" class="box" fill="#eee8d5" /><text x="150" y="27" class="text">Type of Service</text>
+                        <rect x="190" y="10" width="100" height="25" class="box" fill="#eee8d5" /><text x="240" y="27" class="text">Total Length</text>
+                        
+                        <rect x="10" y="35" width="130" height="25" class="box" fill="#eee8d5" /><text x="75" y="52" class="text">Identification</text>
+                        <rect x="140" y="35" width="50" height="25" class="box" fill="#eee8d5" /><text x="165" y="52" class="text">Flags</text>
+                        <rect x="190" y="35" width="100" height="25" class="box" fill="#eee8d5" /><text x="240" y="52" class="text">Fragment Offset</text>
+
+                        <rect x="10" y="60" width="80" height="25" class="box" fill="#eee8d5" /><text x="50" y="77" class="text">Time to Live (TTL)</text>
+                        <rect x="90" y="60" width="80" height="25" class="box" fill="#eee8d5" /><text x="130" y="77" class="text">Protocol</text>
+                        <rect x="170" y="60" width="120" height="25" class="box" fill="#eee8d5" /><text x="230" y="77" class="text">Header Checksum</text>
+                        
+                        <rect x="10" y="85" width="280" height="30" class="box" fill="#d1e7dd" /><text x="150" y="105" class="text">Source IP Address</text>
+                        <rect x="10" y="115" width="280" height="30" class="box" fill="#d1e7dd" /><text x="150" y="135" class="text">Destination IP Address</text>
+                        <rect x="10" y="145" width="280" height="25" class="box" fill="#f8d7da" /><text x="150" y="162" class="text">Options (if any)</text>
+                    </svg>
+                    <ul>
+                        <li><strong>Version:</strong> Always 4 for IPv4.</li>
+                        <li><strong>Time to Live (TTL):</strong> A counter that prevents routing loops. Each router decrements it by 1. When it hits 0, the packet is dropped.</li>
+                        <li><strong>Protocol:</strong> Identifies the next-level protocol (e.g., 6 for TCP, 17 for UDP).</li>
+                        <li><strong>Source Address:</strong> The 32-bit IP of the sender.</li>
+                        <li><strong>Destination Address:</strong> The 32-bit IP of the receiver.</li>
+                    </ul>
+                    
+                    <h4>Address Classes (Legacy)</h4>
+                    <p>This is a legacy system, but the private address ranges come from it.</p>
+                    <ul>
+                        <li><strong>Class A (1.0.0.0 - 126.255.255.255):</strong> <code>N.H.H.H</code> (Mask <code>255.0.0.0</code>). For huge networks.</li>
+                        <li><strong>Class B (128.0.0.0 - 191.255.255.255):</strong> <code>N.N.H.H</code> (Mask <code>255.255.0.0</code>). For medium networks.</li>
+                        <li><strong>Class C (192.0.0.0 - 223.255.255.255):</strong> <code>N.N.N.H</code> (Mask <code>255.255.255.0</code>). For small networks.</li>
+                    </ul>
+                    
+                    <h4>Private vs. Public IP Addresses</h4>
+                    <ul>
+                        <li><strong>Public IPs:</strong> Routable on the Internet. Must be globally unique.</li>
+                        <li><strong>Private IPs:</strong> Not routable on the Internet. Reusable by anyone on their internal network. We use <a href="https://en.wikipedia.org/wiki/Network_address_translation" target="_blank" rel="noopener noreferrer">NAT (Network Address Translation)</a> to get to the internet.
+                            <ul>
+                                <li><strong>Class A Private:</strong> <code>10.0.0.0</code> to <code>10.255.255.255</code></li>
+                                <li><strong>Class B Private:</strong> <code>172.16.0.0</code> to <code>172.31.255.255</code></li>
+                                <li><strong>Class C Private:</strong> <code>192.168.0.0</code> to <code>192.168.255.255</code></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    
+                    <h4>Special Addresses</h4>
+                    <p>In any network, two addresses cannot be assigned to a host:</p>
+                    <ul>
+                        <li><strong>Network Address:</strong> The first address in the range (all host bits are 0). Identifies the network itself (e.g., <code>192.168.1.0</code>).</li>
+                        <li><strong>Broadcast Address:</strong> The last address in the range (all host bits are 1). Sends a packet to all hosts on the network (e.g., <code>192.168.1.255</code>).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Collapsible Section: ARP -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">8. ARP (Address Resolution Protocol)</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <p><strong>Problem:</strong> Host H1 (<code>192.168.1.1</code>) wants to send a packet to H2 (<code>192.168.1.2</code>) on the same LAN. H1 knows the *destination IP* (Layer 3), but to build the Ethernet frame, it needs the *destination MAC* (Layer 2). How does it find it?</p>
+                    <p><strong>Solution:</strong> <strong>ARP (Address Resolution Protocol)</strong>.</p>
+                    
+                    <h4>ARP Process</h4>
+                    <ol class="list-decimal pl-6 mb-4">
+                        <li class="mb-2"><strong>ARP Request:</strong> H1 shouts a <strong>broadcast</strong> frame (Dest MAC: <code>FF:FF:FF:FF:FF:FF</code>) to everyone on the LAN. The message inside says, "Who has IP <code>192.168.1.2</code>? Tell <code>192.168.1.1</code>."</li>
+                        <li class="mb-2"><strong>ARP Reply:</strong> All devices on the LAN receive and read the request. H3, H4, etc., ignore it. H2 sees its own IP and responds with a <strong>unicast</strong> frame (Dest MAC: <code>AAA...</code>) directly to H1. The message says, "I am <code>192.168.1.2</code>, my MAC address is <code>BBB...</code>".</li>
+                        <li class="mb-2"><strong>ARP Cache:</strong> H1 receives the reply and stores the mapping (<code>192.168.1.2</code> = <code>BBB...</code>) in its <strong>ARP Table (or ARP cache)</strong> for future use.</li>
+                    </ol>
+
+                    <!-- SVG: ARP Process -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; }
+                            .device { fill: #d1e7dd; stroke: #002b36; stroke-width: 1.5; rx: 5; }
+                            .line { stroke: #586e75; stroke-width: 2; }
+                            .arrow { stroke-width: 2.5; marker-end: url(#arrowhead); }
+                            .req { stroke: #dc322f; }
+                            .rep { stroke: #859900; }
+                            .req-label { fill: #dc322f; }
+                            .rep-label { fill: #859900; }
+                        </style>
+                        <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc322f"/></marker></defs>
+                        <!-- H1 -->
+                        <rect x="50" y="80" width="60" height="40" class="device" />
+                        <text x="80" y="130" class="label" text-anchor="middle">H1</text>
+                        <text x="80" y="145" class="label" text-anchor="middle">192.168.1.1</text>
+                        <text x="80" y="160" class="label" text-anchor="middle">MAC: AAA</text>
+                        <!-- H2 -->
+                        <rect x="390" y="80" width="60" height="40" class="device" />
+                        <text x="420" y="130" class="label" text-anchor="middle">H2</text>
+                        <text x="420" y="145" class="label" text-anchor="middle">192.168.1.2</text>
+                        <text x="420" y="160" class="label" text-anchor="middle">MAC: BBB</text>
+                        <!-- LAN Line -->
+                        <line x1="110" y1="100" x2="390" y2="100" class="line" />
+                        <!-- ARP Request -->
+                        <path d="M115 90 h270" class="arrow req" />
+                        <text x="250" y="80" class="label req-label" text-anchor="middle">1. ARP Request (Broadcast)</text>
+                        <text x="250" y="65" class="label req-label" text-anchor="middle">"Who has 192.168.1.2?"</text>
+                        <!-- ARP Reply -->
+                        <path d="M385 110 h-270" class="arrow rep" marker-end="url(#arrowhead-rep)" />
+                        <text x="250" y="125" class="label rep-label" text-anchor="middle">2. ARP Reply (Unicast)</text>
+                        <text x="250" y="140" class="label rep-label" text-anchor="middle">"I do. My MAC is BBB."</text>
+                        <defs><marker id="arrowhead-rep" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#859900"/></marker></defs>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Collapsible Section: ICMP & Troubleshooting -->
+            <div class="collapsible-wrapper mb-4">
+                <div class="collapsible-header">
+                    <h3 class="text-xl font-semibold">9. ICMP & Troubleshooting</h3>
+                    <svg class="icon w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+                <div class="collapsible-content">
+                    <h4>ICMP (Internet Control Message Protocol)</h4>
+                    <p>ICMP is a network-layer protocol used for diagnostics and error reporting. It's not used to carry user data, but to manage the network.</p>
+                    <!-- SVG: ICMP Header -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; text-anchor: middle; }
+                            .box { stroke: #002b36; stroke-width: 1; fill: #f0f0f0; }
+                            .text { font-size: 9px; text-anchor: middle; fill: #073642; } /* Dark text */
+                        </style>
+                        <rect x="10" y="10" width="80" height="30" class="box" fill="#eee8d5" /><text x="50" y="30" class="text">Type (8 bits)</text>
+                        <rect x="90" y="10" width="80" height="30" class="box" fill="#eee8d5" /><text x="130" y="30" class="text">Code (8 bits)</text>
+                        <rect x="170" y="10" width="120" height="30" class="box" fill="#eee8d5" /><text x="230" y="30" class="text">Checksum (16 bits)</text>
+                        <rect x="10" y="40" width="280" height="30" class="box" fill="#f8d7da" /><text x="150" y="60" class="text">Rest of header (depends on Type)</text>
+                    </svg>
+                    <p><strong>Common ICMP Messages:</strong></p>
+                    <ul>
+                        <li><strong>Type 8 (Echo Request) & Type 0 (Echo Reply):</strong> Used by the <strong>ping</strong> utility to test reachability.</li>
+                        <li><strong>Type 3 (Destination Unreachable):</strong> Sent by a router when it can't deliver a packet (e.g., host is down, or port is blocked by a firewall).</li>
+                        <li><strong>Type 11 (Time Exceeded):</strong> Sent by a router when it drops a packet because its TTL reached zero. This is the mechanism used by <strong>traceroute</strong>.</li>
+                    </ul>
+                    
+                    <h4>Traceroute</h4>
+                    <p>Traceroute maps the path a packet takes to a destination. It works by sending packets with a TTL of 1, then 2, then 3, and so on.</p>
+                    <ol class="list-decimal pl-6 mb-4">
+                        <li>Sends packet with TTL=1. The first router (R1) decrements TTL to 0, drops it, and sends an ICMP "Time Exceeded" message back. The source now knows R1's address.</li>
+                        <li>Sends packet with TTL=2. R1 forwards it. The second router (R2) decrements TTL to 0, drops it, and sends "Time Exceeded". The source now knows R2's address.</li>
+                        <li>This repeats until the packet reaches the final destination, which replies with a "Destination Unreachable" (because traceroute uses an unused UDP port).</li>
+                    </ol>
+                    <!-- SVG: Traceroute Process -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 250">
+                        <style>
+                            .label { font-family: Inter, sans-serif; font-size: 10px; fill: #073642; } /* Dark text */
+                            .device { fill: #fff3cd; stroke: #002b36; stroke-width: 1.5; } /* Changed rx to default circle */
+                            .line { stroke: #586e75; stroke-width: 2; }
+                            .arrow { stroke-width: 2; marker-end: url(#arrowhead); }
+                            .udp { stroke: #268bd2; }
+                            .icmp { stroke: #dc322f; stroke-dasharray: 4; }
+                            .text { font-size: 9px; fill: #073642; } /* Dark text */
+                            .udp-label { fill: #268bd2; }
+                            .icmp-label { fill: #dc322f; }
+                        </style>
+                        <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#073642"/></marker></defs>
+                        <!-- Devices -->
+                        <circle cx="50" cy="100" r="20" class="device" /><text x="50" y="104" class="label" text-anchor="middle">R1</text><text x="50" y="130" class="label" text-anchor="middle">192.168.12.1</text>
+                        <circle cx="250" cy="100" r="20" class="device" /><text x="250" y="104" class="label" text-anchor="middle">R2</text><text x="250" y="130" class="label" text-anchor="middle">192.168.12.2</text><text x="250" y="145" class="label" text-anchor="middle">192.168.23.2</text>
+                        <circle cx="450" cy="100" r="20" class="device" /><text x="450" y="104" class="label" text-anchor="middle">R3</text><text x="450" y="130" class="label" text-anchor="middle">192.168.23.3</text>
+                        <!-- Lines -->
+                        <line x1="70" y1="100" x2="230" y2="100" class="line" />
+                        <line x1="270" y1="100" x2="430" y2="100" class="line" />
+
+                        <!-- Step 1: TTL=1 -->
+                        <text x="30" y="30" class="label" font-weight="bold">1. Send UDP (TTL=1) to 192.168.23.3</text>
+                        <path d="M70 90 h160" class="arrow udp" />
+                        <text x="150" y="85" class="text udp-label">UDP TTL=1</text>
+                        <text x="250" y="40" class="label" font-weight="bold">2. R2 drops (TTL=0), sends ICMP Time Exceeded</text>
+                        <path d="M230 110 h-160" class="arrow icmp" />
+                        <text x="150" y="120" class="text icmp-label">ICMP Time Exceeded (from 192.168.12.2)</text>
+
+                        <!-- Step 2: TTL=2 -->
+                        <text x="30" y="170" class="label" font-weight="bold">3. Send UDP (TTL=2) to 192.168.23.3</text>
+                        <path d="M70 180 h360" class="arrow udp" />
+                        <text x="250" y="175" class="text udp-label">UDP TTL=2</text>
+                        <text x="300" y="210" class="label" font-weight="bold">4. R3 receives, sends ICMP Port Unreachable</text>
+                        <path d="M430 195 h-360" class="arrow icmp" />
+                        <text x="250" y="205" class="text icmp-label">ICMP Port Unreachable (from 192.168.23.3)</text>
+                    </svg>
+                    
+                    <h4>Common Interface Troubleshooting</h4>
+                    <ul>
+                        <li><strong>Duplex/Speed Mismatch:</strong> One side is set to 100/Full, the other is on Auto (and negotiates to 100/Half). This causes massive packet loss. <strong>Rule:</strong> Set both sides to `auto` or hard-code both sides to the same setting.</li>
+                        <li><strong>Port-Security Violation:</strong> If an interface is `err-disabled`, it may be a port-security violation. This happens when an unauthorized MAC address connects, or too many MACs are seen.
+                            <ul>
+                                <li><code>show interfaces status err-disabled</code> - See the reason.</li>
+                                <li>Fix: <code>shutdown</code> and then <code>no shutdown</code> the interface after resolving the issue.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Protocol Mismatch:</strong> On serial links, if one side is using `HDLC` encapsulation and the other is using `PPP`, the line protocol will be down. Both sides must match.</li>
+                    </ul>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Prep Questions Page -->
+        <section id="prep-questions" class="page-content hidden">
+            <h2 class="text-3xl font-bold mb-6" style="color: var(--h-color);">Prep Questions</h2>
+            <p class="mb-6">Click on a card to flip it and see the answer.</p>
+            
+            <div class="flip-card-grid">
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the difference between a Hub and a Switch?</h3></div>
+                        <div class="flip-card-back"><p>A hub (Layer 1) repeats signals to all ports (one collision domain). A switch (Layer 2) learns MAC addresses and forwards frames intelligently (one collision domain *per port*).</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is a Collision Domain?</h3></div>
+                        <div class="flip-card-back"><p>A network segment where data packets can collide if sent simultaneously. Hubs create one; switches create one for each port.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is a Broadcast Domain?</h3></div>
+                        <div class="flip-card-back"><p>A collection of devices that receive broadcast frames from each other. By default, a switch is one broadcast domain.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What devices break up broadcast domains?</h3></div>
+                        <div class="flip-card-back"><p><strong>Routers</strong> (at Layer 3) and <strong>VLANs</strong> (at Layer 2).</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>How does a switch learn MAC addresses?</h3></div>
+                        <div class="flip-card-back"><p>It inspects the <strong>source MAC address</strong> of incoming frames and adds it to its MAC address table, associating it with the port it came in on.</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What does a switch do if the destination MAC is unknown?</h3></div>
+                        <div class="flip-card-back"><p>It <strong>floods</strong> the frame out all ports *except* the one it came in on.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is ARP?</h3></div>
+                        <div class="flip-card-back"><p><strong>Address Resolution Protocol.</strong> It resolves a Layer 3 (IP) address to a Layer 2 (MAC) address on a local network.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the destination MAC of an ARP Request?</h3></div>
+                        <div class="flip-card-back"><p><code>FF:FF:FF:FF:FF:FF</code> (a Layer 2 broadcast).</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What are the two main parts of an IPv4 address?</h3></div>
+                        <div class="flip-card-back"><p>The <strong>Network part</strong> (identifies the subnet) and the <strong>Host part</strong> (identifies the device on that subnet).</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the "loopback" address?</h3></div>
+                        <div class="flip-card-back"><p><code>127.0.0.1</code>. Pinging it tests the local IP stack on your own machine.</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What two addresses in a subnet cannot be assigned to a host?</h3></div>
+                        <div class="flip-card-back"><p>The <strong>Network Address</strong> (first, all host bits 0) and the <strong>Broadcast Address</strong> (last, all host bits 1).</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is PoE?</h3></div>
+                        <div class="flip-card-back"><p><strong>Power over Ethernet.</strong> A technology to send electrical power along with data on Ethernet cables to devices like VoIP phones, APs, and cameras.</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the difference between Endspan and Midspan PoE?</h3></div>
+                        <div class="flip-card-back"><p><strong>Endspan</strong> uses a PoE-capable switch. <strong>Midspan</strong> uses a PoE injector between a non-PoE switch and the device.</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the most common LAN topology?</h3></div>
+                        <div class="flip-card-back"><p><strong>Star Topology</strong>, where all devices connect to a central switch.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is the function of the TTL field in an IP header?</h3></div>
+                        <div class="flip-card-back"><p><strong>Time to Live.</strong> It's a counter (decremented by 1 by every router) that prevents packets from looping forever.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What ICMP message does `ping` use?</h3></div>
+                        <div class="flip-card-back"><p>ICMP <strong>Echo Request (Type 8)</strong> and ICMP <strong>Echo Reply (Type 0)</strong>.</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What ICMP message does `traceroute` rely on?</h3></div>
+                        <div class="flip-card-back"><p>ICMP <strong>Time Exceeded (Type 11)</strong>. It receives this from each router along the path as the TTL expires.</p></div>
+                    </div>
+                </div>
+
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What is a common symptom of a duplex mismatch?</h3></div>
+                        <div class="flip-card-back"><p>The interface stays up, but you experience massive packet loss, slow speeds, and high collisions (on the half-duplex side).</p></div>
+                    </div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><h3>What does an interface state of `err-disabled` mean?</h3></div>
+                        <div class="flip-card-back"><p>The switch has automatically disabled the port due to a serious error, most commonly a <strong>port-security violation</strong>.</p></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Theme Switcher ---
+            const themeToggle = document.getElementById('theme-toggle');
+            const body = document.body;
+
+            themeToggle.addEventListener('change', () => {
+                if (themeToggle.checked) {
+                    body.classList.remove('solarized-light');
+                    body.classList.add('solarized-dark');
+                } else {
+                    body.classList.remove('solarized-dark');
+                    body.classList.add('solarized-light');
+                }
+            });
+
+            // --- Page Navigation ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page-content');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const pageId = link.getAttribute('data-page');
+
+                    // Update active link
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    // Show/hide pages
+                    pages.forEach(page => {
+                        if (page.id === pageId) {
+                            page.classList.remove('hidden');
+                        } else {
+                            page.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // --- Collapsible Sections ---
+            const collapsibles = document.querySelectorAll('.collapsible-header');
+            collapsibles.forEach(header => {
+                header.addEventListener('click', () => {
+                    header.classList.toggle('open');
+                    const content = header.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        content.classList.remove('open');
+                    } else {
+                        content.classList.add('open');
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            });
+
+            // --- Dashboard Card Links ---
+            const dashboardCards = document.querySelectorAll('.dashboard-card');
+            dashboardCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const topic = card.getAttribute('data-topic');
+                    
+                    // Switch to course review page
+                    document.querySelector('.nav-link[data-page="course-review"]').click();
+                    
+                    // Find and open the corresponding collapsible section
+                    const headers = document.querySelectorAll('.collapsible-header');
+                    headers.forEach(header => {
+                        const content = header.nextElementSibling;
+                        const headerText = header.textContent.toLowerCase();
+                        
+                        // A simple check to find the right section
+                        if (headerText.includes(topic) || (topic === 'domains' && headerText.includes('collision'))) {
+                            if (!header.classList.contains('open')) {
+                                header.click();
+                            }
+                            // Scroll to the section
+                            header.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            if (header.classList.contains('open')) {
+                                header.click(); // Close others
+                            }
+                        }
+                    });
+                });
+            });
+
+            // --- Flip Cards ---
+            const flipCards = document.querySelectorAll('.flip-card');
+            flipCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('flipped');
+                });
+            });
+
+        });
+    </script>
+
+</body>
+</html>
+
+
+
+

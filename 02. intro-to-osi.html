@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction to the OSI Model</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        /* Solarized Light Theme */
+        :root {
+            --bg-primary: #fdf6e3; /* base3 */
+            --bg-secondary: #eee8d5; /* base2 */
+            --text-primary: #657b83; /* base00 */
+            --text-secondary: #586e75; /* base01 */
+            --text-accent: #073642; /* base02 */
+            --highlight: #b58900; /* yellow */
+            --link-color: #268bd2; /* blue */
+            --header-bg: #f5f5f5;
+            --border-color: #93a1a1; /* base1 */
+        }
+
+        /* Solarized Dark Theme */
+        .dark-mode {
+            --bg-primary: #002b36; /* base03 */
+            --bg-secondary: #073642; /* base02 */
+            --text-primary: #839496; /* base0 */
+            --text-secondary: #93a1a1; /* base1 */
+            --text-accent: #eee8d5; /* base2 */
+            --highlight: #b58900; /* yellow */
+            --link-color: #268bd2; /* blue */
+            --header-bg: #0a3f4e;
+            --border-color: #586e75; /* base01 */
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--text-accent);
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-link:hover {
+             background-color: var(--bg-primary);
+        }
+
+        .nav-link.active {
+            background-color: var(--link-color);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .control-btn {
+            background-color: var(--bg-primary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .control-btn:hover {
+             background-color: var(--bg-secondary);
+             border-color: var(--text-accent);
+        }
+        
+        .collapsible-header {
+            cursor: pointer;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .collapsible-content {
+            border: 1px solid var(--border-color);
+            border-top: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding: 0 1.5rem;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 10000px; /* Large value to allow for content */
+            padding: 1.5rem;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .modal-content {
+             background-color: var(--bg-primary);
+             padding: 2rem;
+             border-radius: 0.75rem;
+             width: 90%;
+             max-width: 500px;
+        }
+        
+        .styled-input, .styled-textarea {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+        }
+        
+        .styled-input:focus, .styled-textarea:focus {
+            outline: none;
+            border-color: var(--link-color);
+            box-shadow: 0 0 0 2px rgba(38, 139, 210, 0.3);
+        }
+        
+        div[contenteditable=true] {
+            min-height: 8rem;
+        }
+
+        div[contenteditable=true]:empty:before {
+            content: attr(data-placeholder);
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .styled-table th, .styled-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            text-align: left;
+        }
+        
+        .styled-table th {
+            background-color: var(--bg-secondary);
+            color: var(--text-accent);
+        }
+
+        .import-btn {
+            background-color: var(--link-color);
+            color: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .import-btn:hover {
+            background-color: #1a6a9e; /* Darker blue */
+        }
+
+        .code-block {
+            background-color: var(--bg-secondary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        .code-sandbox {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            min-height: 10rem;
+            white-space: pre;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+        }
+
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Header -->
+    <header class="header p-4 rounded-lg shadow-md mb-8">
+        <div class="container mx-auto flex justify-between items-center flex-wrap">
+            <h1 class="text-xl md:text-2xl font-bold text-accent">Introduction to the OSI Model</h1>
+            <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                <button id="expandAll" class="control-btn px-3 py-2 rounded-md text-sm font-semibold">Expand All</button>
+                <button id="collapseAll" class="control-btn px-3 py-2 rounded-md text-sm font-semibold">Collapse All</button>
+                <button id="theme-toggle" class="control-btn p-2 rounded-md">
+                    <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.706-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.95a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707zm-2.121-3.536a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z"/></svg>
+                    <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
+                </button>
+            </div>
+        </div>
+        <nav class="container mx-auto mt-4">
+            <ul class="flex flex-wrap gap-2 justify-center md:justify-start">
+                <li><a href="#lecture" class="nav-link active">Lecture</a></li>
+                <li><a href="#exercises" class="nav-link">Exercises</a></li>
+                <li><a href="#tips" class="nav-link">Tips</a></li>
+                <li><a href="#explanations" class="nav-link">Explanations</a></li>
+                <li><a href="#answers" class="nav-link">Answers</a></li>
+                <li><a href="#evaluation" class="nav-link">Evaluation Grid</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container mx-auto">
+        <!-- Lecture Section -->
+        <section id="lecture" class="main-content">
+            <h2 class="text-3xl font-bold mb-6">Lecture: The OSI Model</h2>
+            <div class="space-y-4">
+                <!-- Introduction -->
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">Introduction: Solving Network Chaos</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>In the early days, network development was chaotic. Each vendor created their own proprietary systems that couldn't communicate with others. To solve this, the International Organization for Standardization (<a href="https://www.iso.org/" target="_blank" rel="noopener noreferrer">ISO</a>) developed the Open Systems Interconnection (OSI) model, released in 1984. The OSI model provides a standardized, layered framework that allows hardware and software from different vendors to work together seamlessly. It's also an excellent tool for teaching and understanding how networks operate.</p>
+                    </div>
+                </div>
+
+                <!-- The 7 Layers -->
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">The 7 Layers of the OSI Model</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p class="mb-4">The OSI model consists of seven distinct layers, each with a specific function. Data must pass through all layers in order, from top to bottom on the sending device and from bottom to top on the receiving device. A popular mnemonic to remember the layers is: <strong class="text-[var(--text-accent)]">"All People Seem To Need Data Processing"</strong>.</p>
+                        
+                        <!-- SVG for OSI Model -->
+                        <div class="my-4 p-4 flex justify-center">
+                           <svg viewBox="0 0 250 380" xmlns="http://www.w3.org/2000/svg" aria-labelledby="osi-title">
+                                <title id="osi-title">OSI Model Layers Diagram</title>
+                                <defs>
+                                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:rgb(38,139,210);stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:rgb(42,161,152);stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <g font-family="Inter, sans-serif" font-size="14" text-anchor="middle">
+                                    <!-- Layer 7 -->
+                                    <rect x="10" y="10" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="35" fill="white" font-weight="bold">Layer 7</text>
+                                    <text x="160" y="35" fill="white">Application</text>
+                                    <!-- Layer 6 -->
+                                    <rect x="10" y="60" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="85" fill="white" font-weight="bold">Layer 6</text>
+                                    <text x="160" y="85" fill="white">Presentation</text>
+                                    <!-- Layer 5 -->
+                                    <rect x="10" y="110" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="135" fill="white" font-weight="bold">Layer 5</text>
+                                    <text x="160" y="135" fill="white">Session</text>
+                                    <!-- Layer 4 -->
+                                    <rect x="10" y="160" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="185" fill="white" font-weight="bold">Layer 4</text>
+                                    <text x="160" y="185" fill="white">Transport</text>
+                                    <!-- Layer 3 -->
+                                    <rect x="10" y="210" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="235" fill="white" font-weight="bold">Layer 3</text>
+                                    <text x="160" y="235" fill="white">Network</text>
+                                    <!-- Layer 2 -->
+                                    <rect x="10" y="260" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="285" fill="white" font-weight="bold">Layer 2</text>
+                                    <text x="160" y="285" fill="white">Data Link</text>
+                                    <!-- Layer 1 -->
+                                    <rect x="10" y="310" width="230" height="40" rx="5" fill="url(#grad1)"/>
+                                    <text x="50" y="335" fill="white" font-weight="bold">Layer 1</text>
+                                    <text x="160" y="335" fill="white">Physical</text>
+                                </g>
+                           </svg>
+                        </div>
+                        
+                        <ul class="list-disc list-inside space-y-3">
+                            <li><strong>Layer 7: Application:</strong> The layer closest to the user. Provides network services directly to user applications like web browsers (HTTP), email clients (SMTP), and file transfer (FTP).</li>
+                            <li><strong>Layer 6: Presentation:</strong> Formats and translates data to be presentable for the Application layer. It handles data encryption, compression, and character encoding (e.g., ASCII, EBCDIC).</li>
+                            <li><strong>Layer 5: Session:</strong> Establishes, manages, and terminates sessions between two hosts. It ensures that the communication link between applications is maintained.</li>
+                            <li><strong>Layer 4: Transport:</strong> Provides reliable or unreliable data transfer between end systems. It segments data into smaller chunks and uses protocols like <strong>TCP</strong> (reliable, connection-oriented) and <strong>UDP</strong> (unreliable, connectionless).</li>
+                            <li><strong>Layer 3: Network:</strong> Handles logical addressing (IP addresses), path determination, and routing of data packets across different networks. IPv4 and IPv6 operate at this layer.</li>
+                            <li><strong>Layer 2: Data Link:</strong> Formats data into frames and provides reliable transit across a physical medium. It handles physical addressing (MAC addresses), error detection, and flow control. Ethernet is a key Layer 2 protocol.</li>
+                            <li><strong>Layer 1: Physical:</strong> Defines the physical characteristics of the network, such as cables, connectors, voltage levels, and data rates. It's the layer you can physically touch.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Encapsulation and PDUs -->
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">Encapsulation, De-encapsulation, and PDUs</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>The process of data moving down the OSI model layers is called <strong>encapsulation</strong>. Each layer adds its own header (and sometimes a trailer) to the data it receives from the layer above. The reverse process on the receiving end is <strong>de-encapsulation</strong>.</p>
+                        
+                        <!-- SVG for Encapsulation -->
+                        <div class="my-4 p-4 text-center">
+                            <h4 class="font-bold mb-2">The Encapsulation & De-encapsulation Process</h4>
+                            <svg viewBox="0 0 450 300" xmlns="http://www.w3.org/2000/svg" aria-labelledby="encap-title">
+                                <title id="encap-title">Encapsulation and De-encapsulation Diagram</title>
+                                <g font-family="Inter, sans-serif" font-size="10">
+                                    <!-- Sender Side -->
+                                    <text x="100" y="20" font-weight="bold" font-size="12" text-anchor="middle">Sender (Encapsulation)</text>
+                                    <path d="M100 30 V 250" stroke="var(--text-secondary)" stroke-width="2" marker-end="url(#arrow)"/>
+                                    <rect x="60" y="40" width="80" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <text x="100" y="53" text-anchor="middle">Data</text>
+                                    <text x="50" y="48" text-anchor="end">App</text>
+                                    
+                                    <rect x="50" y="90" width="100" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="50" y="90" width="20" height="20" rx="3" fill="#2aa198"/>
+                                    <text x="60" y="103" fill="white" font-size="8">H4</text>
+                                    <text x="105" y="103" text-anchor="middle">Data</text>
+                                    <text x="45" y="98" text-anchor="end">Transport</text>
+
+                                    <rect x="40" y="140" width="120" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="40" y="140" width="20" height="20" rx="3" fill="#cb4b16"/>
+                                    <text x="50" y="153" fill="white" font-size="8">H3</text>
+                                    <text x="100" y="153" text-anchor="middle">Segment</text>
+                                    <text x="35" y="148" text-anchor="end">Network</text>
+
+                                    <rect x="30" y="190" width="140" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="30" y="190" width="20" height="20" rx="3" fill="#6c71c4"/>
+                                    <text x="40" y="203" fill="white" font-size="8">H2</text>
+                                    <text x="100" y="203" text-anchor="middle">Packet</text>
+                                    <text x="25" y="198" text-anchor="end">Data Link</text>
+                                    
+                                    <!-- Receiver Side -->
+                                    <text x="350" y="20" font-weight="bold" font-size="12" text-anchor="middle">Receiver (De-encapsulation)</text>
+                                    <path d="M350 250 V 30" stroke="var(--text-secondary)" stroke-width="2" marker-end="url(#arrow)"/>
+                                    <rect x="310" y="40" width="80" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <text x="350" y="53" text-anchor="middle">Data</text>
+                                    <text x="400" y="48" text-anchor="start">App</text>
+                                    
+                                    <rect x="300" y="90" width="100" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="300" y="90" width="20" height="20" rx="3" fill="#2aa198"/>
+                                    <text x="310" y="103" fill="white" font-size="8">H4</text>
+                                    <text x="355" y="103" text-anchor="middle">Data</text>
+                                     <text x="405" y="98" text-anchor="start">Transport</text>
+
+                                    <rect x="290" y="140" width="120" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="290" y="140" width="20" height="20" rx="3" fill="#cb4b16"/>
+                                    <text x="300" y="153" fill="white" font-size="8">H3</text>
+                                    <text x="350" y="153" text-anchor="middle">Segment</text>
+                                     <text x="415" y="148" text-anchor="start">Network</text>
+
+                                    <rect x="280" y="190" width="140" height="20" rx="3" fill="#eee8d5" stroke="#93a1a1"/>
+                                    <rect x="280" y="190" width="20" height="20" rx="3" fill="#6c71c4"/>
+                                    <text x="290" y="203" fill="white" font-size="8">H2</text>
+                                    <text x="350" y="203" text-anchor="middle">Packet</text>
+                                    <text x="425" y="198" text-anchor="start">Data Link</text>
+
+                                    <!-- Network medium -->
+                                     <path d="M 175 220 C 210 250, 240 250, 275 220" stroke="#b58900" stroke-width="2" fill="none" stroke-dasharray="4 2"/>
+                                     <text x="225" y="250" text-anchor="middle" font-size="9">Network (Bits)</text>
+
+                                    <defs>
+                                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-secondary)"/></marker>
+                                    </defs>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <p class="mt-2">The "packet of information" at each layer is called a Protocol Data Unit (PDU). These have different names at different layers:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>Layers 7, 6, 5:</strong> Data</li>
+                            <li><strong>Layer 4 (Transport):</strong> Segments (for TCP) or Datagrams (for UDP)</li>
+                            <li><strong>Layer 3 (Network):</strong> Packets (e.g., IP Packets)</li>
+                            <li><strong>Layer 2 (Data Link):</strong> Frames (e.g., Ethernet Frames)</li>
+                            <li><strong>Layer 1 (Physical):</strong> Bits</li>
+                        </ul>
+                    </div>
+                </div>
+                 <!-- OSI Model in Action -->
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">OSI Model in Action with Wireshark & tcpdump</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>We can observe the OSI model's layers using network analysis tools. <a href="https://www.wireshark.org/download.html" target="_blank" rel="noopener noreferrer">Wireshark</a> provides a graphical interface, while `tcpdump` is a powerful command-line utility. Capturing an HTTP request reveals the layered structure:</p>
+                        <ol class="list-decimal list-inside mt-2 space-y-2">
+                           <li><strong>The Ethernet Frame (Layer 2):</strong> Contains source/destination MAC addresses.</li>
+                           <li><strong>The IP Packet (Layer 3):</strong> Contains source/destination IP addresses.</li>
+                           <li><strong>The TCP Segment (Layer 4):</strong> Contains source/destination ports.</li>
+                           <li><strong>The HTTP Data (Layer 7):</strong> Contains the browser's request.</li>
+                        </ol>
+                        <p class="mt-4">Here is a `tcpdump` command to capture similar traffic. Click "Run Code" to see a simulation of the output.</p>
+                        <div class="code-block my-4">
+                            <code>$ tcpdump -i any 'tcp port 80 and host cisco.com'</code>
+                        </div>
+                        <div class="flex gap-2">
+                           <button id="runTcpdump" class="import-btn text-sm">Run Code</button>
+                           <button id="clearTcpdump" class="control-btn text-sm px-3 py-2 rounded-md">Clear Output</button>
+                        </div>
+                        <pre id="tcpdump-output" class="code-sandbox"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Exercises Section -->
+        <section id="exercises" class="main-content hidden">
+            <h2 class="text-3xl font-bold mb-6">Exercises</h2>
+            <div class="space-y-4">
+                 <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Exercise 1: OSI Layer Functions</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p class="font-semibold mb-2">Match the OSI Model layer to its primary function: (e.g., "Network - Routing", "Physical - Cables")</p>
+                        <ul class="list-disc list-inside mb-2">
+                            <li>Handles logical addressing and path selection (e.g., IP addresses).</li>
+                            <li>Responsible for the user-facing application protocol (e.g., HTTP).</li>
+                            <li>Transmits raw bits over a physical medium.</li>
+                            <li>Provides reliable data transfer using TCP.</li>
+                            <li>Handles physical addressing (e.g., MAC addresses).</li>
+                        </ul>
+                        <div contenteditable="true" class="styled-textarea w-full p-2" data-placeholder="Type or import your answer here..."></div>
+                        <div class="mt-2 flex items-center gap-2">
+                             <label class="import-btn text-sm">
+                                Import Content
+                                <input type="file" class="hidden file-input" accept=".txt,.md,.docx,image/*">
+                            </label>
+                            <span class="file-name text-sm text-[var(--text-secondary)]"></span>
+                        </div>
+                    </div>
+                </div>
+                 <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Exercise 2: Protocol Data Units (PDUs)</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p class="font-semibold mb-2">What is the name of the Protocol Data Unit (PDU) at each of the following layers?</p>
+                         <ul class="list-disc list-inside mb-2">
+                            <li>Layer 4 (Transport Layer)</li>
+                            <li>Layer 3 (Network Layer)</li>
+                            <li>Layer 2 (Data Link Layer)</li>
+                        </ul>
+                        <div contenteditable="true" class="styled-textarea w-full p-2" data-placeholder="Type or import your answer here..."></div>
+                         <div class="mt-2 flex items-center gap-2">
+                             <label class="import-btn text-sm">
+                                Import Content
+                                <input type="file" class="hidden file-input" accept=".txt,.md,.docx,image/*">
+                            </label>
+                            <span class="file-name text-sm text-[var(--text-secondary)]"></span>
+                        </div>
+                    </div>
+                </div>
+                 <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Exercise 3: Encapsulation vs. De-encapsulation</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p class="font-semibold mb-2">Explain the difference between encapsulation and de-encapsulation in the context of the OSI model. When does each process occur?</p>
+                        <div contenteditable="true" class="styled-textarea w-full p-2" data-placeholder="Type or import your answer here..."></div>
+                        <div class="mt-2 flex items-center gap-2">
+                             <label class="import-btn text-sm">
+                                Import Content
+                                <input type="file" class="hidden file-input" accept=".txt,.md,.docx,image/*">
+                            </label>
+                            <span class="file-name text-sm text-[var(--text-secondary)]"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Exercise 4: Real-World Scenario</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p class="font-semibold mb-2">When you type `http://www.google.com` into your web browser and press Enter, describe at least one key action that happens at Layer 7 (Application), Layer 3 (Network), and Layer 2 (Data Link).</p>
+                        <div contenteditable="true" class="styled-textarea w-full p-2" data-placeholder="Type or import your answer here..."></div>
+                        <div class="mt-2 flex items-center gap-2">
+                             <label class="import-btn text-sm">
+                                Import Content
+                                <input type="file" class="hidden file-input" accept=".txt,.md,.docx,image/*">
+                            </label>
+                            <span class="file-name text-sm text-[var(--text-secondary)]"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Your Work Section -->
+            <div id="submit-section" class="mt-12 p-6 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                <h3 class="text-2xl font-bold mb-4">Submit Your Work</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="studentName" class="block text-sm font-semibold mb-1">Your Name:</label>
+                        <input type="text" id="studentName" class="styled-input w-full p-2" placeholder="Enter your full name">
+                    </div>
+                    <div>
+                        <label for="studentId" class="block text-sm font-semibold mb-1">Student ID:</label>
+                        <input type="text" id="studentId" class="styled-input w-full p-2" placeholder="Enter your student ID">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <a id="sendEmailBtn" class="import-btn font-semibold" href="#">Send Answers via Email</a>
+                    <button id="copyAndDownloadBtn" class="import-btn font-semibold">Copy & Download Answers (.html)</button>
+                </div>
+                 <div id="feedback-message" class="font-semibold mb-4 text-[var(--link-color)]"></div>
+
+                <div class="p-4 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm">
+                    <h4 class="font-bold mb-2">How to Submit:</h4>
+                    <p class="mb-2"><strong>1. Copy & Download (Recommended):</strong> Click the "Copy & Download Answers (.html)" button. This starts a download for a `student_answers.html` file. <strong>Please attach this HTML file to an email to your teacher.</strong></p>
+                    <p class="mb-2"><strong>2. Send via Email:</strong> This button will attempt to open your email client with a plain-text version of your answers. Note that this method will not preserve images or complex formatting.</p>
+                    <p><strong>To send rich content:</strong> ALWAYS use the "Copy & Download" button and attach the downloaded `.html` file to a new email addressed to <strong class="text-[var(--text-accent)]">asengroa@hotmail.com</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tips Section -->
+        <section id="tips" class="main-content hidden">
+            <h2 class="text-3xl font-bold mb-6">Tips</h2>
+             <div class="space-y-4">
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Tip for Question 1</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>Think about the core responsibility of each layer. Where do addresses live? Where does reliability get handled? Which layer can you physically touch?</p>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Tip for Question 2</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>Remember the specific terms used for the data "packets" as they are formatted by the Transport, Network, and Data Link layers.</p>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Tip for Question 3</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>Think about the direction of data flow. One process is "adding headers" and the other is "removing headers". Which one happens on the sending computer versus the receiving computer?</p>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Tip for Question 4</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>For Layer 7, what protocol is a web browser using? For Layer 3, what kind of addresses are needed to cross the internet? For Layer 2, what kind of addresses are used on the local network?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Explanations Section -->
+        <section id="explanations" class="main-content hidden">
+            <h2 class="text-3xl font-bold mb-6">Explanations</h2>
+             <div class="space-y-4">
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Explanation for Question 1</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>The correct matches are: <strong>Network Layer</strong> handles IP addressing and routing. <strong>Application Layer</strong> handles protocols like HTTP. <strong>Physical Layer</strong> deals with physical media like cables. <strong>Transport Layer</strong> provides reliability with TCP. <strong>Data Link Layer</strong> manages MAC addresses.</p>
+                    </div>
+                </div>
+                 <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Explanation for Question 2</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>The PDUs are named: <strong>Layer 4: Segment</strong> (for TCP). <strong>Layer 3: Packet</strong>. <strong>Layer 2: Frame</strong>. It's important to use the correct terminology (e.g., "IP packet," not "IP frame").</p>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Explanation for Question 3</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                         <p><strong>Encapsulation</strong> is the process on the sending device where each layer adds its own header to the data from the layer above it, wrapping it for transmission. <strong>De-encapsulation</strong> is the reverse process on the receiving device, where each layer strips off its corresponding header to pass the data up to the next layer.</p>
+                    </div>
+                </div>
+                <div class="collapsible">
+                    <div class="collapsible-header p-4 rounded-t-lg flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Explanation for Question 4</h3>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div class="collapsible-content rounded-b-lg">
+                        <p>A good answer includes: <strong>Layer 7:</strong> The browser creates an HTTP GET request. <strong>Layer 3:</strong> An IP packet is created with the source IP (your computer) and destination IP (Google's server). <strong>Layer 2:</strong> An Ethernet frame is created with the source MAC address (your network card) and the destination MAC address (your router's MAC address).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Answers Section -->
+        <section id="answers" class="main-content hidden">
+            <h2 class="text-3xl font-bold mb-6">Answers</h2>
+            <div class="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                <h4 class="font-bold text-lg mb-2">Exercise 1:</h4>
+                <p>Network Layer, Application Layer, Physical Layer, Transport Layer, Data Link Layer</p>
+                <h4 class="font-bold text-lg mt-4 mb-2">Exercise 2:</h4>
+                <p>Layer 4: Segment, Layer 3: Packet, Layer 2: Frame</p>
+                 <h4 class="font-bold text-lg mt-4 mb-2">Exercise 3:</h4>
+                <p>Encapsulation occurs on the sending device as data travels down the OSI stack. De-encapsulation occurs on the receiving device as data travels up the OSI stack.</p>
+                 <h4 class="font-bold text-lg mt-4 mb-2">Exercise 4:</h4>
+                <p>Layer 7: Browser sends HTTP GET request. Layer 3: IP packet is created with source/destination IPs. Layer 2: Ethernet frame is created with source/destination MACs.</p>
+            </div>
+        </section>
+
+        <!-- Evaluation Grid Section -->
+        <section id="evaluation" class="main-content hidden">
+            <h2 class="text-3xl font-bold mb-6">Evaluation Grid</h2>
+            <div class="overflow-x-auto">
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Points Possible</th>
+                            <th>Criteria for Full Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1. Layer Functions</td>
+                            <td>25</td>
+                            <td>Correctly matches all five functions to their respective layers.</td>
+                        </tr>
+                        <tr>
+                            <td>2. PDUs</td>
+                            <td>25</td>
+                            <td>Correctly names the PDUs for all three specified layers.</td>
+                        </tr>
+                        <tr>
+                            <td>3. Encapsulation</td>
+                            <td>25</td>
+                            <td>Clearly defines both terms and correctly identifies when each occurs.</td>
+                        </tr>
+                        <tr>
+                            <td>4. Real-World Scenario</td>
+                            <td>25</td>
+                            <td>Provides a correct and distinct example for each of the three layers.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+    
+    <!-- Password Modal -->
+    <div id="password-modal" class="modal-overlay hidden">
+        <div class="modal-content shadow-2xl">
+            <h3 class="text-xl font-bold mb-2 text-[var(--text-accent)]">Password Required</h3>
+            <p class="text-sm text-[var(--text-secondary)] mb-1">Please enter the password to view the answers.</p>
+            <p class="text-sm text-[var(--text-secondary)] mb-1">If you want to Cancel the action, click outside the "Password Required" box.</p>
+            <p class="text-sm text-[var(--text-secondary)] mb-4">You can see the entered password by clicking on the "eye" icon.</p>
+            
+            <div class="relative">
+                 <input type="password" id="password-input" class="styled-input w-full p-2 pr-10" placeholder="Enter password...">
+                 <button id="toggle-password" type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--text-secondary)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
+                 </button>
+            </div>
+           
+            <p id="password-error" class="text-red-500 text-sm mt-2 hidden">Incorrect password. Please try again.</p>
+            <button id="submit-password" class="w-full mt-4 import-btn font-semibold">Unlock Answers</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Theme Toggling ---
+            const themeToggle = document.getElementById('theme-toggle');
+            const lightIcon = document.getElementById('theme-icon-light');
+            const darkIcon = document.getElementById('theme-icon-dark');
+
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            }
+
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                lightIcon.classList.toggle('hidden');
+                darkIcon.classList.toggle('hidden');
+                if (document.body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.removeItem('theme');
+                }
+            });
+            
+            // --- Navigation ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const mainContents = document.querySelectorAll('.main-content');
+            const answersLink = document.querySelector('a[href="#answers"]');
+            
+            const switchTab = (hash) => {
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.hash === hash);
+                });
+                mainContents.forEach(content => {
+                    content.classList.toggle('hidden', content.id !== hash.substring(1));
+                });
+            };
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    if (this.hash !== '#answers') {
+                        e.preventDefault();
+                        switchTab(this.hash);
+                    }
+                });
+            });
+            
+            // --- Collapsible Sections ---
+            const collapsibles = document.querySelectorAll('.collapsible-header');
+            collapsibles.forEach(header => {
+                header.addEventListener('click', function () {
+                    const content = this.nextElementSibling;
+                    content.classList.toggle('expanded');
+                    this.querySelector('span').classList.toggle('rotate-180');
+                });
+            });
+
+            document.getElementById('expandAll').addEventListener('click', () => {
+                document.querySelectorAll('.collapsible-content').forEach(content => {
+                    content.classList.add('expanded');
+                    content.previousElementSibling.querySelector('span').classList.add('rotate-180');
+                });
+            });
+
+            document.getElementById('collapseAll').addEventListener('click', () => {
+                document.querySelectorAll('.collapsible-content').forEach(content => {
+                    content.classList.remove('expanded');
+                     content.previousElementSibling.querySelector('span').classList.remove('rotate-180');
+                });
+            });
+            
+            // --- Password Protection ---
+            const passwordModal = document.getElementById('password-modal');
+            const passwordInput = document.getElementById('password-input');
+            const submitPassword = document.getElementById('submit-password');
+            const passwordError = document.getElementById('password-error');
+            const togglePassword = document.getElementById('toggle-password');
+
+            let answersUnlocked = sessionStorage.getItem('answersUnlocked') === 'true';
+
+            answersLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (answersUnlocked) {
+                    switchTab('#answers');
+                } else {
+                    passwordModal.classList.remove('hidden');
+                    passwordInput.focus();
+                }
+            });
+            
+            submitPassword.addEventListener('click', checkPassword);
+            passwordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') checkPassword();
+            });
+            
+            function checkPassword() {
+                 if (passwordInput.value === 'student2025') {
+                    answersUnlocked = true;
+                    sessionStorage.setItem('answersUnlocked', 'true');
+                    passwordModal.classList.add('hidden');
+                    passwordError.classList.add('hidden');
+                    passwordInput.value = '';
+                    switchTab('#answers');
+                } else {
+                    passwordError.classList.remove('hidden');
+                }
+            }
+
+            passwordModal.addEventListener('click', function(e) {
+                if (e.target === passwordModal) {
+                    passwordModal.classList.add('hidden');
+                    passwordError.classList.add('hidden');
+                }
+            });
+            
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+            });
+
+            // --- TCPDump Simulation ---
+            const runTcpdumpBtn = document.getElementById('runTcpdump');
+            const clearTcpdumpBtn = document.getElementById('clearTcpdump');
+            const tcpdumpOutput = document.getElementById('tcpdump-output');
+            let tcpdumpInterval;
+
+            const simulatedOutput = [
+                'tcpdump: verbose output suppressed, use -v or -vv for full protocol decode',
+                'listening on any, link-type LINUX_SLL (Linux cooked v1), capture size 262144 bytes',
+                '15:30:01.123456 IP my-pc.54321 > cisco-server.http: Flags [S], seq 123456789, win 64240, length 0',
+                '15:30:01.234567 IP cisco-server.http > my-pc.54321: Flags [S.], seq 987654321, ack 123456790, win 29200, length 0',
+                '15:30:01.234678 IP my-pc.54321 > cisco-server.http: Flags [.], ack 1, win 502, length 0',
+                '15:30:01.345789 IP my-pc.54321 > cisco-server.http: Flags [P.], seq 1:518, ack 1, win 502, length 517: HTTP: GET / HTTP/1.1',
+                '15:30:01.456890 IP cisco-server.http > my-pc.54321: Flags [.], ack 518, win 237, length 0',
+                '--- Capture complete ---',
+            ];
+
+            runTcpdumpBtn.addEventListener('click', () => {
+                clearInterval(tcpdumpInterval);
+                tcpdumpOutput.textContent = '';
+                runTcpdumpBtn.disabled = true;
+                runTcpdumpBtn.style.opacity = '0.5';
+
+                let lineIndex = 0;
+                tcpdumpInterval = setInterval(() => {
+                    if (lineIndex < simulatedOutput.length) {
+                        tcpdumpOutput.textContent += (lineIndex > 0 ? '\n' : '') + simulatedOutput[lineIndex];
+                        lineIndex++;
+                    } else {
+                        clearInterval(tcpdumpInterval);
+                        runTcpdumpBtn.disabled = false;
+                        runTcpdumpBtn.style.opacity = '1';
+                    }
+                }, 400);
+            });
+
+            clearTcpdumpBtn.addEventListener('click', () => {
+                clearInterval(tcpdumpInterval);
+                tcpdumpOutput.textContent = '';
+                runTcpdumpBtn.disabled = false;
+                runTcpdumpBtn.style.opacity = '1';
+            });
+
+
+            // --- File Import Handling ---
+            const fileInputs = document.querySelectorAll('.file-input');
+            fileInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const file = this.files[0];
+                    const answerBox = this.closest('.collapsible-content').querySelector('div[contenteditable="true"]');
+                    const fileNameDisplay = this.closest('.flex').querySelector('.file-name');
+
+                    if (!file) {
+                        fileNameDisplay.textContent = '';
+                        return;
+                    }
+
+                    fileNameDisplay.textContent = `Importing: ${file.name}`;
+                    const reader = new FileReader();
+
+                    if (file.type.startsWith('image/')) {
+                        reader.onload = function(e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.maxWidth = '90%';
+                            img.style.maxHeight = '300px';
+                            img.style.borderRadius = '0.5rem';
+                            img.style.margin = '0.5rem 0';
+                            answerBox.appendChild(img);
+                            fileNameDisplay.textContent = `✓ Imported ${file.name}`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else if (file.name.endsWith('.docx')) {
+                        reader.onload = function(e) {
+                            mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                                .then(result => {
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = result.value;
+                                    tempDiv.querySelectorAll('p:empty').forEach(p => p.remove());
+                                    answerBox.innerHTML += tempDiv.innerHTML;
+                                    fileNameDisplay.textContent = `✓ Imported ${file.name}`;
+                                })
+                                .catch(err => {
+                                    console.error("DOCX conversion error:", err);
+                                    answerBox.innerText += `\n[Error importing ${file.name}]`;
+                                    fileNameDisplay.textContent = `✗ Error with ${file.name}`;
+                                });
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else if (file.type.startsWith('text/')) {
+                        reader.onload = function(e) {
+                            const pre = document.createElement('pre');
+                            pre.textContent = e.target.result;
+                            pre.style.whiteSpace = 'pre-wrap';
+                            pre.style.backgroundColor = 'var(--bg-primary)';
+                            pre.style.padding = '0.5rem';
+                            pre.style.borderRadius = '0.25rem';
+                            answerBox.appendChild(pre);
+                            fileNameDisplay.textContent = `✓ Imported ${file.name}`;
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        answerBox.innerText += `\n[File imported: ${file.name} - content preview not available for this file type]`;
+                        fileNameDisplay.textContent = `? Imported ${file.name} (no preview)`;
+                    }
+                    this.value = '';
+                });
+            });
+
+            // --- Submit Work Logic ---
+            const sendEmailBtn = document.getElementById('sendEmailBtn');
+            const copyAndDownloadBtn = document.getElementById('copyAndDownloadBtn');
+            const studentNameInput = document.getElementById('studentName');
+            const studentIdInput = document.getElementById('studentId');
+            const feedbackMessage = document.getElementById('feedback-message');
+
+            function gatherAnswers(asHtmlString = false) {
+                const name = studentNameInput.value || 'N/A';
+                const id = studentIdInput.value || 'N/A';
+                
+                if (asHtmlString) {
+                    let htmlContent = `
+                        <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Student Answers</title>
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 20px; color: #333; }
+                            .answer-block { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: #f9f9f9; }
+                            h1, h2 { color: #111; } h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                            img { max-width: 100%; height: auto; border-radius: 4px; }
+                            pre { white-space: pre-wrap; background-color: #eee; padding: 10px; border-radius: 4px; font-family: monospace; }
+                            table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        </style></head><body>
+                        <h1>Student Submission</h1><p><strong>Name:</strong> ${name}</p><p><strong>ID:</strong> ${id}</p><hr>`;
+                    
+                    document.querySelectorAll('#exercises .collapsible').forEach((block, index) => {
+                        const question = block.querySelector('.font-semibold.mb-2').textContent.trim();
+                        const answerHtml = block.querySelector('div[contenteditable="true"]').innerHTML.trim() || '<p><em>[No answer provided]</em></p>';
+                        htmlContent += `<div class="answer-block"><h2>Question ${index + 1}: ${question}</h2><div>${answerHtml}</div></div>`;
+                    });
+                    
+                    htmlContent += `</body></html>`;
+                    return htmlContent;
+
+                } else { // Plain text for email body
+                    let content = `Student Name: ${name}\nStudent ID: ${id}\n\n--- ANSWERS ---\n\n`;
+                    document.querySelectorAll('#exercises .collapsible').forEach((block, index) => {
+                        const question = block.querySelector('.font-semibold.mb-2').textContent.trim();
+                        const answer = block.querySelector('div[contenteditable="true"]').innerText.trim() || '[No answer provided]';
+                        content += `Question ${index + 1}: ${question}\nAnswer:\n${answer}\n\n--------------------------------\n\n`;
+                    });
+                    return content;
+                }
+            }
+
+            sendEmailBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const name = studentNameInput.value || 'Anonymous Student';
+                const subject = encodeURIComponent(`OSI Model Submission from ${name}`);
+                const body = encodeURIComponent(gatherAnswers(false));
+                const mailtoLink = `mailto:asengroa@hotmail.com?subject=${subject}&body=${body}`;
+                if (mailtoLink.length > 2000) {
+                    alert("Your answers are too long to send directly via this link. Please use the 'Copy & Download' button and attach the downloaded HTML file to a new email.");
+                } else {
+                    window.location.href = mailtoLink;
+                }
+            });
+
+            copyAndDownloadBtn.addEventListener('click', function() {
+                const answersHtml = gatherAnswers(true);
+                
+                try {
+                    const blob = new Blob([answersHtml], { type: 'text/html' });
+                    const clipboardItem = new ClipboardItem({ 'text/html': blob });
+                    navigator.clipboard.write([clipboardItem]).then(() => {
+                        feedbackMessage.textContent = 'Rich content copied to clipboard & download started!';
+                        setTimeout(() => { feedbackMessage.textContent = ''; }, 4000);
+                    }).catch(err => {
+                        feedbackMessage.textContent = 'Could not copy rich content. Download will still start.';
+                        setTimeout(() => { feedbackMessage.textContent = ''; }, 4000);
+                        console.error('Failed to copy rich text: ', err);
+                    });
+                } catch (e) {
+                    navigator.clipboard.writeText(answersHtml);
+                    console.warn('ClipboardItem not supported, copying as plain HTML source.');
+                }
+                
+                const fileBlob = new Blob([answersHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(fileBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'student_answers.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+        });
+    </script>
+</body>
+</html>
+
+
