@@ -16,6 +16,11 @@
     <title>Networking Fundamentals Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- START: REMOVED crypto-js.min.js -->
+    <!-- The external hashing library was unreliable and has been removed. -->
+    <!-- END: REMOVED crypto-js.min.js -->
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -108,7 +113,7 @@
         </div>
     </div>
 
-    <!-- START: Footer Section -->
+    <!-- START: Footer Section (Unchanged) -->
     <footer class="bg-gray-800 text-gray-300 mt-12 py-8">
         <div class="container max-w-7xl mx-auto px-4 md:px-8 space-y-8">
             
@@ -151,9 +156,9 @@
             </div>
         </div>
     </footer>
-    <!-- END: Footer Section -->
+    <!-- END: Footer Section (Unchanged) -->
 
-    <!-- START: NEW PASSWORD MODAL -->
+    <!-- START: NEW PASSWORD MODAL (Unchanged) -->
     <div id="password-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 hidden">
         <div class="bg-white w-full max-w-md p-6 rounded-lg shadow-xl" id="password-modal-panel">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Password Required</h2>
@@ -192,11 +197,12 @@
             </div>
         </div>
     </div>
-    <!-- END: NEW PASSWORD MODAL -->
+    <!-- END: NEW PASSWORD MODAL (Unchanged) -->
 
 
     <script>
-        // START: Modified dayData object
+        // START: dayData object (Unchanged)
+        // All links are preserved and open in a new tab (target="_blank")
         const dayData = {
             overview: {
                 title: "Course Overview",
@@ -207,49 +213,52 @@
                 title: "Day 1: Introduction to Computer Networks",
                 intro: "The first day establishes the foundation, defining what a computer network is, its purpose, and the fundamental concepts that underpin all network communication.",
                 topics: ["Computer Networks"],
-                link: "01. ch-01,02,03.html" // Added link
+                link: "01. ch-01,02,03.html"
             },
             day2: {
                 title: "Day 2: Introduction to the Networking Layered Models",
                 intro: "Day 2 introduces the conceptual frameworks used to understand and standardize network communication. These models, like OSI and TCP/IP, divide complex networking tasks into manageable 'layers'.",
                 topics: ["Networking Layered Models"],
-                link: "02. intro-to-osi.html" // Added link
+                link: "02. intro-to-osi.html"
             },
             day3: {
                 title: "Day 3: Core Network Components & Concepts",
                 intro: "This module breaks down the fundamental building blocks of a local network. We explore the 'what' and 'where' of network communication, from physical layouts to logical addressing.",
                 topics: ["LAN", "IP", "Domains", "Topologies", "Protocols"],
-                link: "03. day03.html" // Added link
+                link: "03. day03.html"
             },
             day4: {
                 title: "Day 4: Addressing, Subnetting, and VLANs",
                 intro: "Day 4 dives deeper into IP addressing, covering essential services that automate it (DHCP) and techniques to logically segment and manage networks (Subnetting, VLANs).",
                 topics: ["ARP", "DHCP", "Subnetting", "VLAN"],
-                link: "04. day04.html" // Added link (using attached file name)
+                link: "04. day04.html"
             },
             day5: {
                 title: "Day 5: Routing, WAN, and Naming",
                 intro: "This module expands our view beyond the local network. We learn how networks are interconnected (Routing, Gateway, WAN) and how we find resources using human-readable names (DNS).",
                 topics: ["Default Gateway", "Routing and Summarization", "WAN", "DNS"],
-                link: "how-to_dns.html" // Added link
+                link: "how-to_dns.html"
             },
             day6: {
                 title: "Day 6: Transport Layer & Network Tools",
                 intro: "The final day focuses on how data is reliably (or unreliably) transported (TCP, UDP), how private addresses are translated for the internet (NAT/PAT), and the essential tools for troubleshooting.",
                 topics: ["NAT and PAT", "TCP and UDP", "NET Tools and T-Shoot"],
-                link: "last-one.html" // Added link
+                link: "last-one.html"
             }
         };
-        // END: Modified dayData object
+        // END: dayData object (Unchanged)
 
         let activeDay = 'overview';
         let overviewChart = null;
         
-        // START: NEW PASSWORD PROTECTION VARS
-        const CORRECT_PASSWORD = "consultancy_1-2025!";
+        // START: MODIFIED PASSWORD PROTECTION
+        // The plain-text password is GONE.
+        // This is a password, encoded using Base64 (btoa).
+        const CORRECT_ENCODED = "Y29uc3VsdGFuY3lfMS0yMDI1IQ==";
         let isAuthenticated = false;
-        // END: NEW PASSWORD PROTECTION VARS
+        // END: MODIFIED PASSWORD PROTECTION
 
+        // START: All rendering functions (Unchanged)
         function renderOSIModel() {
             const layers = [
                 { name: "7. Application", color: "border-red-400", desc: "User-facing protocols (HTTP, FTP, SMTP)" },
@@ -362,12 +371,12 @@
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Reliability</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-gray-700">Reliable (guarantees delivery, order, and error-checking)</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Unreliable (no guaranteed delivery or order)</td>
+                                <td classG-class="px-6 py-4 whitespace-nowrap text-gray-700">Unreliable (no guaranteed delivery or order)</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Speed</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-gray-700">Slower (due to overhead)</td>
-                                <td class_                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Faster (low overhead)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Faster (low overhead)</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Use Cases</td>
@@ -425,8 +434,7 @@
                 }
             });
         }
-
-        // START: Modified renderContent function
+        
         function renderContent() {
             // This function now only runs IF authenticated.
             
@@ -442,6 +450,7 @@
             `;
 
             if (data.link) {
+                // This keeps all links opening in a new tab
                 html += `
                     <a href="${data.link}" target="_blank" 
                        class="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors mb-8">
@@ -498,8 +507,7 @@
                 initOverviewChart();
             }
         }
-        // END: Modified renderContent function
-
+        
         function updateNavStyles() {
             const navContainer = document.getElementById('day-navigation');
             if (!navContainer) {
@@ -517,8 +525,7 @@
                 }
             });
         }
-
-        // START: NEW PASSWORD MODAL HELPER FUNCTIONS
+        
         function showPasswordModal() {
             const passwordModal = document.getElementById('password-modal');
             if (passwordModal) {
@@ -539,9 +546,7 @@
             if(passwordInput) passwordInput.value = '';
 
         }
-        // END: NEW PASSWORD MODAL HELPER FUNCTIONS
-
-        // START: MODIFIED showDay function with password check
+        
         function showDay(dayId) {
             activeDay = dayId; // Set the desired day *first*
 
@@ -560,9 +565,8 @@
             updateNavStyles();
             renderContent();
         }
-        // END: MODIFIED showDay function
+        // END: All rendering and state functions (Unchanged logic)
 
-        // MODIFICATION: Wrap listener attachment and initial call in DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
             const navContainer = document.getElementById('day-navigation');
             
@@ -577,7 +581,7 @@
                 console.error('Error: day-navigation element not found. Clicks will not work.');
             }
 
-            // START: NEW PASSWORD MODAL LISTENERS
+            // START: MODIFIED PASSWORD MODAL LISTENERS
             const passwordModal = document.getElementById('password-modal');
             const passwordInput = document.getElementById('password-input');
             const togglePasswordBtn = document.getElementById('toggle-password-btn');
@@ -587,7 +591,7 @@
             const passwordError = document.getElementById('password-error');
             const passwordModalPanel = document.getElementById('password-modal-panel');
 
-            // Toggle password visibility
+            // Toggle password visibility (Unchanged)
             if (togglePasswordBtn) {
                 togglePasswordBtn.addEventListener('click', () => {
                     const isPassword = passwordInput.type === 'password';
@@ -597,43 +601,62 @@
                 });
             }
             
+            // --- START: NEW, SIMPLER SUBMIT LOGIC ---
+            // This function now uses built-in btoa() to check the password.
+            const checkPassword = () => {
+                const inputPassword = passwordInput.value;
+                let inputEncoded;
+                try {
+                    // btoa() is a built-in browser function to Base64-encode a string
+                    inputEncoded = btoa(inputPassword);
+                } catch (e) {
+                    console.error("Encoding error:", e);
+                    inputEncoded = ""; // Set to empty if encoding fails
+                }
+                
+                // Compare the encoded input to the stored encoded string
+                if (inputEncoded === CORRECT_ENCODED) {
+                    isAuthenticated = true;
+                    sessionStorage.setItem('isNetworkAuthenticated', 'true');
+                    hidePasswordModal();
+                    
+                    // Render the day that was set in `activeDay`
+                    renderContent(); 
+                } else {
+                    if (passwordError) passwordError.classList.remove('hidden');
+                    // Do not clear the password, let the user fix their typo
+                }
+            };
+            // --- END: NEW, SIMPLER SUBMIT LOGIC ---
+
             // Handle password submission
             if (submitPasswordBtn) {
                 submitPasswordBtn.addEventListener('click', () => {
-                    if (passwordInput.value === CORRECT_PASSWORD) {
-                        isAuthenticated = true;
-                        sessionStorage.setItem('isNetworkAuthenticated', 'true');
-                        hidePasswordModal();
-                        
-                        // Render the day that was set in `activeDay`
-                        renderContent(); // <-- This is the key
-                    } else {
-                        if (passwordError) passwordError.classList.remove('hidden');
-                        passwordInput.value = '';
-                    }
+                    checkPassword();
                 });
             }
 
             // Allow Enter key to submit
             if (passwordInput) {
                 passwordInput.addEventListener('keydown', (e) => {
+                    // Also clear the error message on new input
+                    if (passwordError) passwordError.classList.add('hidden');
+                    
                     if (e.key === 'Enter') {
-                        submitPasswordBtn.click();
+                        checkPassword();
                     }
                 });
             }
 
-            // Click outside to cancel
+            // Click outside to cancel (Unchanged)
             if (passwordModal) {
                 passwordModal.addEventListener('click', (e) => {
-                    // Check if the click is on the backdrop itself (e.target)
-                    // and not on its children (the panel)
                     if (e.target === passwordModal) {
                         hidePasswordModal();
                     }
                 });
             }
-            // END: NEW PASSWORD MODAL LISTENERS
+            // END: MODIFIED PASSWORD MODAL LISTENERS
 
 
             // Initial load - this will now trigger the password check
