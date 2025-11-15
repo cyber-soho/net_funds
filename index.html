@@ -102,13 +102,13 @@
             </nav>
 
             <main id="content-area" class="md:w-3/4 bg-white p-6 md:p-8 rounded-lg shadow-sm border border-gray-200 min-h-[60vh]">
-                <!-- Content is rendered here by JavaScript -->
+                <!-- Content is rendered here by JavaScript after password check -->
             </main>
 
         </div>
     </div>
 
-    <!-- START: New Footer Section -->
+    <!-- START: Footer Section -->
     <footer class="bg-gray-800 text-gray-300 mt-12 py-8">
         <div class="container max-w-7xl mx-auto px-4 md:px-8 space-y-8">
             
@@ -133,6 +133,7 @@
                 <h3 class="text-xl font-semibold text-white mb-4">Non-Affiliation & Editorial Disclaimer</h3>
                 <p class="text-sm text-gray-400">
                     This content is independently created by Cyber Soho. Any product names, logos, brands, and other trademarks or images featured or referred to within this course are the property of their respective trademark holders. These trademark holders are not affiliated with Cyber Soho, our products, or our websites. They do not sponsor or endorse Cyber Soho or any of our products.
+                _
                 </p>
             </div>
 
@@ -142,13 +143,56 @@
                 <p class="text-xs text-gray-500">
                     &copy; 2025 Cyber Soho. All Rights Reserved. This content, including all HTML, text, and associated files, is the intellectual property of Cyber Soho and is protected by copyright law. No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of Cyber Soho.
                 </p>
+                <!-- START: MODIFIED EMAIL -->
                 <p class="text-xs text-gray-500 mt-2">
-                    For permissions, contact: [Your GitHub/Contact Email Here]
+                    For permissions, contact: info.6gc0a@slmail.me
                 </p>
+                <!-- END: MODIFIED EMAIL -->
             </div>
         </div>
     </footer>
-    <!-- END: New Footer Section -->
+    <!-- END: Footer Section -->
+
+    <!-- START: NEW PASSWORD MODAL -->
+    <div id="password-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 hidden">
+        <div class="bg-white w-full max-w-md p-6 rounded-lg shadow-xl" id="password-modal-panel">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Password Required</h2>
+            
+            <!-- Custom header text -->
+            <div class="text-sm text-gray-600 mb-4 space-y-1">
+                <p>Please enter the password to the Course of Threats & Risks — 420-1C2-DW.</p>
+                <p>If you want to Cancel the action, click outside the "Password Required" box.</p>
+                <p>You can see the entered password by clicking on the "eye" icon.</p>
+            </div>
+
+            <div>
+                <label for="password-input" class="block text-sm font-medium text-gray-700">Password</label>
+                <div class="mt-1 relative">
+                    <input type="password" id="password-input" name="password" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" autocomplete="current-password">
+                    <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                        <!-- Show: Eye Icon -->
+                        <svg id="password-show-icon" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.634l3.28-3.28 3.28-3.28a1.012 1.012 0 0 1 1.434 0l3.28 3.28 3.28 3.28a1.012 1.012 0 0 1 0 .634l-3.28 3.28-3.28 3.28a1.012 1.012 0 0 1-1.434 0l-3.28-3.28-3.28-3.28Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        <!-- Hide: Eye-Slash Icon -->
+                        <svg id="password-hide-icon" class="h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.99 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.497a10.45 10.45 0 0 1-3.34 4.777M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.89 7.89-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L18 18" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <p id="password-error" class="text-red-600 text-sm mt-2 hidden">Incorrect password. Please try again.</p>
+
+            <div class="mt-5">
+                <button type="button" id="submit-password-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                    Submit
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- END: NEW PASSWORD MODAL -->
 
 
     <script>
@@ -200,8 +244,11 @@
 
         let activeDay = 'overview';
         let overviewChart = null;
-        // REMOVED: const navContainer = document.getElementById('day-navigation');
-        // REMOVED: const contentArea = document.getElementById('content-area');
+        
+        // START: NEW PASSWORD PROTECTION VARS
+        const CORRECT_PASSWORD = "consultancy_1-2025!";
+        let isAuthenticated = false;
+        // END: NEW PASSWORD PROTECTION VARS
 
         function renderOSIModel() {
             const layers = [
@@ -320,7 +367,7 @@
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Speed</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-gray-700">Slower (due to overhead)</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Faster (low overhead)</td>
+                                <td class_                                <td class="px-6 py-4 whitespace-nowrap text-gray-700">Faster (low overhead)</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Use Cases</td>
@@ -340,7 +387,6 @@
             const ctx = document.getElementById('overviewChartCanvas').getContext('2d');
             if (!ctx) return; // Add guard
 
-            // FIX: Define topicCounts and dayLabels here
             const topicCounts = Object.values(dayData).map(d => d.topics.length).slice(1);
             const dayLabels = Object.keys(dayData).slice(1).map((key, i) => `Day ${i + 1}`);
 
@@ -382,6 +428,8 @@
 
         // START: Modified renderContent function
         function renderContent() {
+            // This function now only runs IF authenticated.
+            
             if (overviewChart) {
                 overviewChart.destroy();
                 overviewChart = null;
@@ -393,7 +441,6 @@
                 <p class="text-gray-700 mb-6">${data.intro}</p>
             `;
 
-            // MODIFICATION 1: Add chapter link button
             if (data.link) {
                 html += `
                     <a href="${data.link}" target="_blank" 
@@ -402,11 +449,8 @@
                     </a>
                 `;
             }
-            // END MODIFICATION 1
 
             if (data.topics.length > 0) {
-                
-                // MODIFICATION 2: Add link for Day 6 "Key Concepts"
                 if (activeDay === 'day6') {
                     html += `
                         <a href="how-to-networking.html" target="_blank" class="hover:underline">
@@ -416,7 +460,6 @@
                 } else {
                     html += '<h3 class="text-xl font-semibold mb-4 text-gray-800">Key Concepts</h3>';
                 }
-                // END MODIFICATION 2
 
                 html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">';
                 data.topics.forEach(topic => {
@@ -444,14 +487,12 @@
                     break;
             }
             
-            // MODIFICATION: Get contentArea inside the function
             const contentArea = document.getElementById('content-area');
             if (contentArea) {
                 contentArea.innerHTML = html;
             } else {
                 console.error('Error: content-area element not found.');
             }
-
 
             if (activeDay === 'overview') {
                 initOverviewChart();
@@ -460,7 +501,6 @@
         // END: Modified renderContent function
 
         function updateNavStyles() {
-            // MODIFICATION: Get navContainer inside the function
             const navContainer = document.getElementById('day-navigation');
             if (!navContainer) {
                  console.error('Error: day-navigation element not found.');
@@ -478,13 +518,49 @@
             });
         }
 
+        // START: NEW PASSWORD MODAL HELPER FUNCTIONS
+        function showPasswordModal() {
+            const passwordModal = document.getElementById('password-modal');
+            if (passwordModal) {
+                passwordModal.classList.remove('hidden');
+                document.getElementById('password-input').focus();
+            }
+        }
+
+        function hidePasswordModal() {
+            const passwordModal = document.getElementById('password-modal');
+            if (passwordModal) {
+                passwordModal.classList.add('hidden');
+            }
+            // Reset error and input on close
+            const passwordError = document.getElementById('password-error');
+            const passwordInput = document.getElementById('password-input');
+            if(passwordError) passwordError.classList.add('hidden');
+            if(passwordInput) passwordInput.value = '';
+
+        }
+        // END: NEW PASSWORD MODAL HELPER FUNCTIONS
+
+        // START: MODIFIED showDay function with password check
         function showDay(dayId) {
-            activeDay = dayId;
+            activeDay = dayId; // Set the desired day *first*
+
+            // Check session storage
+            if (sessionStorage.getItem('isNetworkAuthenticated') === 'true') {
+                isAuthenticated = true;
+            }
+
+            if (!isAuthenticated) {
+                updateNavStyles(); // Update nav to show what's selected
+                showPasswordModal(); // Show modal
+                return; // Stop. Don't render content.
+            }
+
+            // --- Authenticated Path ---
             updateNavStyles();
             renderContent();
         }
-
-        // REMOVED: navContainer.addEventListener('click', (e) => { ... });
+        // END: MODIFIED showDay function
 
         // MODIFICATION: Wrap listener attachment and initial call in DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
@@ -501,7 +577,66 @@
                 console.error('Error: day-navigation element not found. Clicks will not work.');
             }
 
-            // Initial load
+            // START: NEW PASSWORD MODAL LISTENERS
+            const passwordModal = document.getElementById('password-modal');
+            const passwordInput = document.getElementById('password-input');
+            const togglePasswordBtn = document.getElementById('toggle-password-btn');
+            const showIcon = document.getElementById('password-show-icon');
+            const hideIcon = document.getElementById('password-hide-icon');
+            const submitPasswordBtn = document.getElementById('submit-password-btn');
+            const passwordError = document.getElementById('password-error');
+            const passwordModalPanel = document.getElementById('password-modal-panel');
+
+            // Toggle password visibility
+            if (togglePasswordBtn) {
+                togglePasswordBtn.addEventListener('click', () => {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    if (showIcon) showIcon.classList.toggle('hidden', !isPassword);
+                    if (hideIcon) hideIcon.classList.toggle('hidden', isPassword);
+                });
+            }
+            
+            // Handle password submission
+            if (submitPasswordBtn) {
+                submitPasswordBtn.addEventListener('click', () => {
+                    if (passwordInput.value === CORRECT_PASSWORD) {
+                        isAuthenticated = true;
+                        sessionStorage.setItem('isNetworkAuthenticated', 'true');
+                        hidePasswordModal();
+                        
+                        // Render the day that was set in `activeDay`
+                        renderContent(); // <-- This is the key
+                    } else {
+                        if (passwordError) passwordError.classList.remove('hidden');
+                        passwordInput.value = '';
+                    }
+                });
+            }
+
+            // Allow Enter key to submit
+            if (passwordInput) {
+                passwordInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        submitPasswordBtn.click();
+                    }
+                });
+            }
+
+            // Click outside to cancel
+            if (passwordModal) {
+                passwordModal.addEventListener('click', (e) => {
+                    // Check if the click is on the backdrop itself (e.target)
+                    // and not on its children (the panel)
+                    if (e.target === passwordModal) {
+                        hidePasswordModal();
+                    }
+                });
+            }
+            // END: NEW PASSWORD MODAL LISTENERS
+
+
+            // Initial load - this will now trigger the password check
             showDay('overview');
         });
 
